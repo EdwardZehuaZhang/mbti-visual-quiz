@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import type { PersonalityState, SceneResponse } from "@/types/quiz";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
 
 const SYSTEM_PROMPT = `You are a personality psychologist who creates evocative visual scenes to probe MBTI personality dimensions. You generate richly atmospheric scene descriptions and corresponding image search queries.
 
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 
 Generate a new scene that primarily targets the ${lowestConfidenceAxis} axis (but can touch others). Make it different from any previous scenes. Prioritize probing the axis where confidence is lowest.`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-4o",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },

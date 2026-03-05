@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import type { PersonalityState, InterpretResponse } from "@/types/quiz";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
 
 const SYSTEM_PROMPT = `You are a personality psychologist interpreting image choices in an MBTI personality assessment. You analyze what a person's visual preference reveals about their personality.
 
@@ -51,7 +51,7 @@ Current personality state:
 
 Interpret this choice and return updated signals and confidence values. Remember to adjust incrementally from the current values.`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-4o",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import type { PersonalityState, ResultsResponse } from "@/types/quiz";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
 
 const SYSTEM_PROMPT = `You are a personality psychologist writing the final results of an MBTI visual personality assessment. You have access to the full history of a person's image choices and the personality signals derived from them.
 
@@ -55,7 +55,7 @@ ${choicesSummary}
 
 Based on all of this data, determine the MBTI type, write a personalized paragraph that references their actual choices, and provide the trait breakdown.`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-4o",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
