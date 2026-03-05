@@ -43,7 +43,7 @@ export default function PrivacyPolicy() {
         <h2 className="text-white text-lg mb-3">Third-Party Services</h2>
         <p className="leading-relaxed">
           We use OpenAI&apos;s API to generate personality interpretations. Prompts include only abstract scene and
-          aesthetic descriptions ¡ª never personal information. Please refer to{" "}
+          aesthetic descriptions - never personal information. Please refer to{" "}
           <a href="https://openai.com/privacy" className="text-white underline underline-offset-4" target="_blank" rel="noopener noreferrer">
             OpenAI&apos;s Privacy Policy
           </a>{" "}
