@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Image from 'next/image'
 import type { ImageItem } from '@/lib/types'
@@ -35,7 +35,7 @@ export default function ImageGrid({ images, onSelect, disabled, selectedId }: Im
           />
           {selectedId === image.id && (
             <div className="absolute inset-0 bg-white/20 flex items-center justify-center">
-              <span className="text-white text-4xl">✓</span>
+              <span className="text-white text-4xl">&#10003;</span>
             </div>
           )}
         </button>

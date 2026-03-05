@@ -1,4 +1,4 @@
-import OpenAI from 'openai'
+﻿import OpenAI from 'openai'
 import type { PersonalityState, SceneResponse, MBTIAxis } from './types'
 
 export const openai = new OpenAI({
@@ -33,7 +33,7 @@ Return ONLY valid JSON in this exact format:
 }`
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: 'gpt-4o',
     messages: [{ role: 'user', content: prompt }],
     response_format: { type: 'json_object' },
     temperature: 0.8,
@@ -80,7 +80,7 @@ Return ONLY valid JSON:
 }`
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: 'gpt-4o',
     messages: [{ role: 'user', content: prompt }],
     response_format: { type: 'json_object' },
     temperature: 0.6,
@@ -127,7 +127,7 @@ Return ONLY valid JSON:
 }`
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: 'gpt-4o',
     messages: [{ role: 'user', content: prompt }],
     response_format: { type: 'json_object' },
     temperature: 0.7,
@@ -137,3 +137,4 @@ Return ONLY valid JSON:
   if (!content) throw new Error('No content from OpenAI')
   return JSON.parse(content)
 }
+
