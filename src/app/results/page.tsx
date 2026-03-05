@@ -34,13 +34,13 @@ function TraitBar({
       className="mb-6"
     >
       <div className="flex justify-between mb-2 text-sm font-light tracking-wide">
-        <span className={score < 0 ? "text-accent" : "text-foreground/40"}>
+        <span className={score < 0 ? "text-white" : "text-white/40"}>
           {left}
         </span>
-        <span className="text-foreground/20 text-xs">
+        <span className="text-white/20 text-xs">
           {dominant} {strength}%
         </span>
-        <span className={score > 0 ? "text-accent" : "text-foreground/40"}>
+        <span className={score > 0 ? "text-white" : "text-white/40"}>
           {right}
         </span>
       </div>
@@ -49,7 +49,7 @@ function TraitBar({
           initial={{ width: "50%" }}
           animate={{ width: `${pct}%` }}
           transition={{ delay: delay + 0.3, duration: 0.8, ease: "easeOut" }}
-          className="h-full bg-accent/70 absolute left-0"
+          className="h-full bg-white/70 absolute left-0"
         />
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-foreground/20 rounded-full" />
       </div>
@@ -87,7 +87,7 @@ export default function ResultsPage() {
         <motion.div
           animate={{ opacity: [0.3, 1, 0.3] }}
           transition={{ duration: 2, repeat: Infinity }}
-          className="text-accent/60 text-sm tracking-widest uppercase font-light"
+          className="text-white/60 text-sm tracking-widest uppercase font-light"
         >
           Composing your profile...
         </motion.div>
@@ -99,16 +99,12 @@ export default function ResultsPage() {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-6">
         <p className="text-foreground/40 font-light">No results found.</p>
-        <Link href="/" className="text-accent underline underline-offset-4">
+        <Link href="/" className="text-white underline underline-offset-4">
           Start over
         </Link>
       </main>
     );
   }
-
-  const aestheticQueries = state.choices
-    .slice(-8)
-    .map((c) => c.imageDescription);
 
   return (
     <main className="min-h-screen px-6 py-20 max-w-2xl mx-auto">
@@ -127,7 +123,7 @@ export default function ResultsPage() {
         >
           Your type is
         </motion.div>
-        <h1 className="text-8xl md:text-9xl font-extralight tracking-[0.2em] text-accent">
+        <h1 className="text-8xl md:text-9xl font-extralight tracking-[0.2em] text-white">
           {results.type}
         </h1>
       </motion.div>
@@ -161,35 +157,40 @@ export default function ResultsPage() {
         </p>
       </motion.div>
 
-      {/* Aesthetic grid */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.8, duration: 0.8 }}
-        className="mb-16"
-      >
-        <h2 className="text-foreground/20 text-sm tracking-[0.2em] uppercase font-light mb-6 text-center">
-          Your Visual Aesthetic
-        </h2>
-        <div className="grid grid-cols-4 gap-2">
-          {aestheticQueries.map((desc, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 2 + i * 0.1, duration: 0.4 }}
-              className="aspect-square overflow-hidden rounded-sm"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`https://picsum.photos/seed/${encodeURIComponent(desc.slice(0, 20))}-${i}/300/300`}
-                alt={desc}
-                className="w-full h-full object-cover opacity-60 hover:opacity-100 transition-opacity duration-500"
-              />
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
+      {/* Aesthetic journey collage */}
+      {state.selectedImages.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.8, duration: 0.8 }}
+          className="mb-16"
+        >
+          <h2 className="text-white/20 text-sm tracking-[0.2em] uppercase font-light mb-6 text-center">
+            Your Aesthetic Journey
+          </h2>
+          <div className="grid grid-cols-4 md:grid-cols-5">
+            {state.selectedImages.map((img, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 2 + i * 0.08, duration: 0.4 }}
+                className="aspect-square overflow-hidden group"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={img.url}
+                  alt={`Choice ${i + 1}`}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+              </motion.div>
+            ))}
+          </div>
+          <p className="text-white/40 text-xs tracking-widest font-light text-center mt-4">
+            Every image you chose. Every version of you.
+          </p>
+        </motion.div>
+      )}
 
       {/* Restart */}
       <motion.div
@@ -200,7 +201,7 @@ export default function ResultsPage() {
       >
         <Link
           href="/"
-          className="inline-block border border-foreground/10 text-foreground/30 px-8 py-3 text-sm tracking-widest uppercase font-light hover:border-accent/40 hover:text-accent transition-all duration-500"
+          className="inline-block border border-white/10 text-white/30 px-8 py-3 text-sm tracking-widest uppercase font-light hover:border-white/40 hover:text-white transition-all duration-500"
         >
           Take again
         </Link>

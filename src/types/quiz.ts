@@ -7,6 +7,8 @@ export interface PersonalityState {
     interpretation: string;
   }>;
   turn: number;
+  lastPinId?: string;
+  selectedImages: Array<{ url: string; pinId: string }>;
 }
 
 export interface SceneResponse {
@@ -45,6 +47,7 @@ export function createInitialState(): PersonalityState {
     confidence: { EI: 0, SN: 0, TF: 0, JP: 0 },
     choices: [],
     turn: 0,
+    selectedImages: [],
   };
 }
 

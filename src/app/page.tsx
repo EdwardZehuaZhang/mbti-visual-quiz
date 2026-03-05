@@ -14,22 +14,17 @@ export default function Home() {
         transition={{ duration: 1.2, ease: "easeOut" }}
         className="relative z-10 text-center max-w-2xl"
       >
-        <h1 className="text-5xl md:text-7xl font-light tracking-tight mb-8 leading-tight">
-          Discover your type
-          <br />
-          <span className="text-accent">through what you</span>
-          <br />
-          love to look at.
+        <h1 className="text-5xl md:text-7xl font-light tracking-tight mb-8 leading-tight text-white">
+          MBTI x Pinterest
         </h1>
 
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 1 }}
-          className="text-lg md:text-xl text-foreground/50 font-light mb-16 max-w-md mx-auto"
+          className="text-lg md:text-xl text-white/60 font-light mb-16 max-w-md mx-auto"
         >
-          A visual personality test powered by AI. Choose images that speak to
-          you, and we&apos;ll reveal who you are.
+          Choose images that speak to you, and we&apos;ll guess who you are.
         </motion.p>
 
         <motion.div
@@ -39,20 +34,11 @@ export default function Home() {
         >
           <Link
             href="/quiz"
-            className="inline-block border border-accent/40 text-accent px-10 py-4 text-lg font-light tracking-widest uppercase hover:bg-accent hover:text-background transition-all duration-500"
+            className="inline-block border border-white/30 text-white px-10 py-4 text-lg font-light tracking-widest uppercase hover:bg-white hover:text-background transition-all duration-500"
           >
-            Begin
+            Touch to start
           </Link>
         </motion.div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.03 }}
-        transition={{ delay: 1.5, duration: 2 }}
-        className="absolute bottom-8 text-sm tracking-widest uppercase font-light"
-      >
-        MBTI Visual Assessment
       </motion.div>
     </main>
   );

@@ -76,6 +76,7 @@ Interpret this choice and return updated signals and confidence values. Remember
         },
       ],
       turn: state.turn + 1,
+      selectedImages: state.selectedImages || [],
     };
 
     const response: InterpretResponse = {
