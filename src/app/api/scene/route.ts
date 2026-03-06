@@ -56,7 +56,8 @@ Generate a new scene that primarily targets the ${lowestConfidenceAxis} axis (bu
     });
 
     const content = completion.choices[0].message.content || "";
-    const scene: SceneResponse = JSON.parse(content);
+    const cleaned = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    const scene = JSON.parse(cleaned);
 
     return NextResponse.json(scene);
   } catch (error) {

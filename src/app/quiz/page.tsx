@@ -66,7 +66,18 @@ export default function QuizPage() {
         chosenImage: { description: image.description, alt: image.alt },
       }),
     });
+    if (!res.ok) {
+      // API error - retry the round without crashing
+      setPhase("choosing");
+      setSelectedId(null);
+      return;
+    }
     const data: InterpretResponse = await res.json();
+    if (!data.state?.confidence) {
+      setPhase("choosing");
+      setSelectedId(null);
+      return;
+    }
     const newState: PersonalityState = {
       ...data.state,
       lastPinId: image.id,
@@ -118,7 +129,7 @@ export default function QuizPage() {
         </div>
       )}
 
-      {/* Image grid �� full screen */}
+      {/* Image grid 锟斤拷 full screen */}
       <AnimatePresence mode="wait">
         {phase !== "loading" && images.length > 0 && (
           <motion.div
@@ -155,7 +166,7 @@ export default function QuizPage() {
         )}
       </AnimatePresence>
 
-      {/* Turn counter �� bottom center */}
+      {/* Turn counter 锟斤拷 bottom center */}
       <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none">
         <span className="text-white/40 text-sm font-light tracking-widest">
           {state.turn + 1} / 15

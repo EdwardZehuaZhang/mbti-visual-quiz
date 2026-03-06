@@ -66,7 +66,8 @@ Based on all of this data, determine the MBTI type, write a personalized paragra
     });
 
     const content = completion.choices[0].message.content || "";
-    const results: ResultsResponse = JSON.parse(content);
+    const cleaned = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    const results = JSON.parse(cleaned);
 
     return NextResponse.json(results);
   } catch (error) {
