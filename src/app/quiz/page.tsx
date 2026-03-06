@@ -13,9 +13,31 @@ import { createInitialState, isQuizComplete } from "@/types/quiz";
 
 type Phase = "loading" | "choosing" | "interpreting";
 
-// Prefetch next scene + images while user is deciding
-async function prefetchNextRound(state: PersonalityState): Promise<{ scene: SceneResponse; images: ImageResult[] } | null> {
+function getOrientation(): string {
+  if (typeof window === "undefined") return "portrait";
+  return window.innerWidth > window.innerHeight ? "landscape" : "portrait";
+}
+
+// Preload images into browser cache before showing them
+function preloadImages(urls: string[]): Promise<void> {
+  return Promise.all(
+    urls.map(
+      (url) =>
+        new Promise<void>((resolve) => {
+          const img = new window.Image();
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+          img.src = url;
+        })
+    )
+  ).then(() => {});
+}
+
+async function fetchRound(
+  state: PersonalityState
+): Promise<{ scene: SceneResponse; images: ImageResult[] } | null> {
   try {
+    const orientation = getOrientation();
     const sceneRes = await fetch("/api/scene", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -23,9 +45,19 @@ async function prefetchNextRound(state: PersonalityState): Promise<{ scene: Scen
     });
     if (!sceneRes.ok) return null;
     const sceneData: SceneResponse = await sceneRes.json();
-    const imagesRes = await fetch(`/api/images?q=${encodeURIComponent(sceneData.imageQuery)}`);
+
+    const pinIdParam = state.lastPinId
+      ? `&pinId=${encodeURIComponent(state.lastPinId)}`
+      : "";
+    const imagesRes = await fetch(
+      `/api/images?q=${encodeURIComponent(sceneData.imageQuery)}${pinIdParam}&orientation=${orientation}`
+    );
     if (!imagesRes.ok) return null;
     const imagesData: ImageResult[] = await imagesRes.json();
+
+    // Preload all images before returning so they're cache-ready
+    await preloadImages(imagesData.map((img) => img.url));
+
     return { scene: sceneData, images: imagesData };
   } catch {
     return null;
@@ -44,6 +76,12 @@ export default function QuizPage() {
   // Queue of prefetched rounds (up to 3 ahead)
   const prefetchQueue = useRef<Promise<{ scene: SceneResponse; images: ImageResult[] } | null>[]>([]);
 
+  const fillQueue = useCallback((currentState: PersonalityState) => {
+    while (prefetchQueue.current.length < 3) {
+      prefetchQueue.current.push(fetchRound(currentState));
+    }
+  }, []);
+
   const showRound = useCallback((sceneData: SceneResponse, imagesData: ImageResult[]) => {
     setScene(sceneData);
     setImages(imagesData);
@@ -61,32 +99,20 @@ export default function QuizPage() {
       const prefetched = await next;
       if (prefetched) {
         showRound(prefetched.scene, prefetched.images);
+        fillQueue(currentState);
         return;
       }
     }
 
-    // No prefetch available 鈥?fetch now
-    try {
-      const pinIdParam = currentState.lastPinId
-        ? `&pinId=${encodeURIComponent(currentState.lastPinId)}`
-        : "";
-      const [sceneRes, ] = await Promise.all([
-        fetch("/api/scene", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ state: currentState }),
-        }),
-      ]);
-      const sceneData: SceneResponse = await sceneRes.json();
-      const imagesRes = await fetch(`/api/images?q=${encodeURIComponent(sceneData.imageQuery)}${pinIdParam}`);
-      const imagesData: ImageResult[] = await imagesRes.json();
-      showRound(sceneData, imagesData);
-    } catch {
-      setPhase("loading");
+    // Fallback: fetch now
+    const result = await fetchRound(currentState);
+    if (result) {
+      showRound(result.scene, result.images);
+      fillQueue(currentState);
     }
-  }, [showRound]);
+  }, [showRound, fillQueue]);
 
-  // On mount: try to use data prefetched from landing page
+  // On mount: try prefetched data from landing page
   useEffect(() => {
     const prefetchedScene = sessionStorage.getItem("prefetch-scene");
     const prefetchedImages = sessionStorage.getItem("prefetch-images");
@@ -95,7 +121,11 @@ export default function QuizPage() {
       sessionStorage.removeItem("prefetch-images");
       const sceneData: SceneResponse = JSON.parse(prefetchedScene);
       const imagesData: ImageResult[] = JSON.parse(prefetchedImages);
-      showRound(sceneData, imagesData);
+      // Preload from cache (likely already cached)
+      preloadImages(imagesData.map((img) => img.url)).then(() => {
+        showRound(sceneData, imagesData);
+        fillQueue(createInitialState());
+      });
     } else {
       loadRound(state);
     }
@@ -105,13 +135,11 @@ export default function QuizPage() {
   const handleChoice = async (image: ImageResult) => {
     if (phase !== "choosing") return;
 
-    // Instant visual feedback
     setSelectedId(image.id);
     setPhase("interpreting");
 
     try {
-      // Fire interpret + prefetch next round in parallel
-      const interpretPromise = fetch("/api/interpret", {
+      const res = await fetch("/api/interpret", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -121,14 +149,7 @@ export default function QuizPage() {
         }),
       });
 
-      // Start prefetching next rounds immediately
-      if (prefetchQueue.current.length < 3) {
-        prefetchQueue.current.push(prefetchNextRound(state));
-      }
-
-      const res = await interpretPromise;
       if (!res.ok) throw new Error(`interpret ${res.status}`);
-
       const data: InterpretResponse = await res.json();
       if (!data?.state?.confidence) throw new Error("bad response");
 
@@ -142,10 +163,9 @@ export default function QuizPage() {
       };
       setState(newState);
 
-      // Fill queue up to 3 ahead using updated state
-      while (prefetchQueue.current.length < 3) {
-        prefetchQueue.current.push(prefetchNextRound(newState));
-      }
+      // Refill queue with accurate updated state
+      prefetchQueue.current = [];
+      fillQueue(newState);
 
       if (isQuizComplete(newState)) {
         sessionStorage.setItem("mbti-state", JSON.stringify(newState));
@@ -179,19 +199,28 @@ export default function QuizPage() {
       </div>
 
       {/* Loading state */}
-      {phase === "loading" && (
-        <div className="flex-1 flex items-center justify-center">
+      <AnimatePresence>
+        {phase === "loading" && (
           <motion.div
-            animate={{ opacity: [0.3, 1, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="text-white/40 text-sm tracking-widest uppercase font-light"
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0 flex items-center justify-center z-10 bg-background"
           >
-            Composing scene...
+            <motion.div
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="text-white/40 text-sm tracking-widest uppercase font-light"
+            >
+              Composing scene...
+            </motion.div>
           </motion.div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
-      {/* Image grid */}
+      {/* Image grid — all 4 images preloaded before shown */}
       <AnimatePresence mode="wait">
         {phase !== "loading" && images.length > 0 && (
           <motion.div
@@ -199,18 +228,17 @@ export default function QuizPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
             className="flex-1 grid grid-cols-2 min-h-0"
             style={{ gridTemplateRows: "1fr 1fr" }}
           >
             {images.map((image, i) => (
               <motion.button
                 key={image.id}
-                initial={{ opacity: 0 }}
                 animate={{
-                  opacity: phase === "interpreting" && selectedId !== image.id ? 0.25 : 1,
+                  opacity: phase === "interpreting" && selectedId !== image.id ? 0.2 : 1,
                 }}
-                transition={{ duration: 0.15, delay: phase === "choosing" ? i * 0.06 : 0 }}
+                transition={{ duration: 0.2 }}
                 onClick={() => handleChoice(image)}
                 disabled={phase !== "choosing"}
                 className={`relative overflow-hidden cursor-pointer

@@ -18,7 +18,6 @@ function extractPinterestImageUrl(
   return imgs["736x"]?.url || imgs["564x"]?.url || imgs["236x"]?.url || null;
 }
 
-// --- Pinterest ---
 async function fetchPinterest(query: string, pinId: string | null, token: string): Promise<ImageResult[]> {
   const headers = { Authorization: `Bearer ${token}` };
   if (pinId) {
@@ -49,33 +48,32 @@ async function fetchPinterest(query: string, pinId: string | null, token: string
   return shuffle(pins).slice(0, 4);
 }
 
-// --- Pexels: fetch 40, take from top half (most popular/curated first) ---
-async function fetchPexels(query: string, key: string): Promise<ImageResult[]> {
+async function fetchPexels(query: string, key: string, orientation: string): Promise<ImageResult[]> {
+  const pexelsOrientation = orientation === "landscape" ? "landscape" : "portrait";
   const res = await fetch(
-    `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=40&size=large`,
+    `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=40&size=large&orientation=${pexelsOrientation}`,
     { headers: { Authorization: key } }
   );
   if (!res.ok) return [];
   const data = await res.json();
   const photos = (data.photos || []) as Array<{
     id: number;
-    src: { large2x: string; large: string };
+    src: { original: string; large2x: string; large: string };
     alt: string;
   }>;
-  // Pexels returns results in relevance order; top 15 tend to be highest quality
   const topPool = photos.slice(0, 15);
   return shuffle(topPool).slice(0, 8).map((photo) => ({
     id: `pexels-${photo.id}`,
-    url: photo.src.large2x || photo.src.large,
+    url: photo.src.original || photo.src.large2x || photo.src.large,
     description: photo.alt || query,
     alt: photo.alt || query,
   }));
 }
 
-// --- Unsplash: fetch 30 sorted by popular, pick top 4 by likes ---
-async function fetchUnsplash(query: string, key: string): Promise<ImageResult[]> {
+async function fetchUnsplash(query: string, key: string, orientation: string): Promise<ImageResult[]> {
+  const unsplashOrientation = orientation === "landscape" ? "landscape" : "portrait";
   const res = await fetch(
-    `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=30&orientation=squarish&order_by=popular&content_filter=high`,
+    `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=30&orientation=${unsplashOrientation}&order_by=popular&content_filter=high`,
     { headers: { Authorization: `Client-ID ${key}` } }
   );
   if (!res.ok) return [];
@@ -85,12 +83,12 @@ async function fetchUnsplash(query: string, key: string): Promise<ImageResult[]>
   );
   return sorted.slice(0, 8).map((img: {
     id: string;
-    urls: { regular: string };
+    urls: { full: string; regular: string };
     description: string | null;
     alt_description: string | null;
   }) => ({
     id: img.id,
-    url: img.urls.regular,
+    url: img.urls.full || img.urls.regular,
     description: img.description || img.alt_description || query,
     alt: img.alt_description || query,
   }));
@@ -100,12 +98,12 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q") || "nature";
   const pinId = searchParams.get("pinId") || null;
+  const orientation = searchParams.get("orientation") || "portrait";
 
   const pinterestToken = process.env.PINTEREST_ACCESS_TOKEN;
   const pexelsKey = process.env.PEXELS_API_KEY;
   const unsplashKey = process.env.UNSPLASH_ACCESS_KEY;
 
-  // 1. Pinterest (when approved)
   if (pinterestToken) {
     try {
       const results = await fetchPinterest(query, pinId, pinterestToken);
@@ -115,10 +113,9 @@ export async function GET(request: Request) {
     }
   }
 
-  // 2. Pexels + Unsplash in parallel — merge and shuffle for variety
   const sources: Promise<ImageResult[]>[] = [];
-  if (pexelsKey) sources.push(fetchPexels(query, pexelsKey).catch(() => []));
-  if (unsplashKey) sources.push(fetchUnsplash(query, unsplashKey).catch(() => []));
+  if (pexelsKey) sources.push(fetchPexels(query, pexelsKey, orientation).catch(() => []));
+  if (unsplashKey) sources.push(fetchUnsplash(query, unsplashKey, orientation).catch(() => []));
 
   if (sources.length > 0) {
     const results = await Promise.all(sources);
@@ -127,10 +124,9 @@ export async function GET(request: Request) {
     if (merged.length > 0) return NextResponse.json(merged);
   }
 
-  // 3. Picsum fallback
   const placeholders: ImageResult[] = Array.from({ length: 4 }, (_, i) => ({
     id: `placeholder-${i}`,
-    url: `https://picsum.photos/seed/${encodeURIComponent(query)}-${i}-${Date.now()}/800/800`,
+    url: `https://picsum.photos/seed/${encodeURIComponent(query)}-${i}-${Date.now()}/1200/1600`,
     description: `${query} - image ${i + 1}`,
     alt: `${query} visual ${i + 1}`,
   }));

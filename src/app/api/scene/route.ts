@@ -24,7 +24,7 @@ Example scenes:
 
 You must respond with valid JSON only, no markdown. The JSON should have these fields:
 - scene: the evocative scene description (2-3 sentences)
-- imageQuery: a search query to find 4 diverse images related to this scene on Unsplash (keep it to 2-3 words for best results)
+- imageQuery: a single specific visual category for the 4 images (e.g. "dense forest", "golden retriever", "neon city street", "minimalist desk"). All 4 images must be from the SAME category - different examples of the same thing, not a mix. 2-3 words max, be specific not generic.
 - axis: which MBTI axis this scene primarily targets (EI, SN, TF, or JP)
 - intent: a brief note on what personality signal you hope to extract from the user's choice`;
 
