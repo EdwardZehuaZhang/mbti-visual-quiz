@@ -92,6 +92,7 @@ export default function QuizPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("loading");
   const [roundKey, setRoundKey] = useState(0);
+  const [displayTurn, setDisplayTurn] = useState(0);
 
   // Queue of prefetched rounds (up to 3 ahead)
   const prefetchQueue = useRef<Promise<{ scene: SceneResponse; images: ImageResult[] } | null>[]>([]);
@@ -157,6 +158,7 @@ export default function QuizPage() {
 
     setSelectedId(image.id);
     setPhase("interpreting");
+    setDisplayTurn((t) => t + 1);
 
     // After a brief visual moment, switch to loading screen
     const loadingTimer = setTimeout(() => setPhase("loading"), 450);
@@ -225,19 +227,14 @@ export default function QuizPage() {
     }
   };
 
-  const progress = state.turn / 11;
-  const avgConfidence = state.confidence
-    ? (state.confidence.EI + state.confidence.SN + state.confidence.TF + state.confidence.JP) / 4
-    : 0;
-
   return (
     <main className="h-[100dvh] w-screen overflow-hidden flex flex-col relative">
-      {/* Progress bar */}
+      {/* Progress bar — advances immediately on click */}
       <div className="fixed top-0 left-0 right-0 z-50 h-[2px] bg-white/5">
         <motion.div
           className="h-full bg-white/40"
-          animate={{ width: `${Math.max(progress, avgConfidence) * 100}%` }}
-          transition={{ duration: 0.5 }}
+          animate={{ width: `${(displayTurn / 11) * 100}%` }}
+          transition={{ duration: 0.4 }}
         />
       </div>
 
@@ -252,13 +249,7 @@ export default function QuizPage() {
             transition={{ duration: 0.3 }}
             className="absolute inset-0 flex items-center justify-center z-10 bg-background"
           >
-            <motion.div
-              animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="text-white/40 text-sm tracking-widest uppercase font-light"
-            >
-              Composing scene...
-            </motion.div>
+            <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-white/50 animate-spin" />
           </motion.div>
         )}
       </AnimatePresence>
