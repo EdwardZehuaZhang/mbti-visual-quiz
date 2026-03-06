@@ -19,10 +19,12 @@ const SYSTEM_PROMPT = `You are a personality psychologist interpreting image cho
 You receive:
 - The scene that was presented
 - The image the user chose (its description)
+- The MBTI axis being probed (e.g. "EI", "JP")
+- The intent mapping: which choices signal which pole (e.g. "busy=E, quiet=I")
 - The current personality state (signals and confidence for each axis)
 
 Your job is to:
-1. Interpret what this specific image choice reveals about the person's personality. Be nuanced - don't just map "minimalist = Thinking" or "colorful = Feeling". Consider the full context of the scene, what this particular image suggests about how they engage with the world, what draws their attention, what resonates with them emotionally and cognitively.
+1. Use the axis and intent to determine what this choice signals. The intent is the authoritative mapping — if the chosen image matches the "E" keywords, push EI positive; if it matches "I" keywords, push EI negative. Apply similar logic for all axes.
 
 2. Update the personality signals and confidence. Signals range from -1.0 to 1.0:
    - EI: -1.0 = strong Introversion, +1.0 = strong Extraversion
@@ -30,7 +32,9 @@ Your job is to:
    - TF: -1.0 = strong Thinking, +1.0 = strong Feeling
    - JP: -1.0 = strong Judging, +1.0 = strong Perceiving
 
-   Adjust signals incrementally (typically by 0.05-0.2 per choice). Confidence should increase with each choice (typically by 0.05-0.15), more if the signal is consistent with previous choices, less if contradictory.
+   Adjust only the targeted axis signal incrementally (typically 0.1-0.2). Other axes may shift slightly (0.0-0.05) if the choice is clearly relevant. Confidence should increase with each choice (typically 0.05-0.15 for the targeted axis, 0.0-0.05 for others).
+
+   IMPORTANT: You must produce an unbiased distribution across all 16 types. Do NOT systematically favor E over I, N over S, F over T, or P over J. Let the intent mapping drive direction.
 
 3. Write a brief interpretation (1-2 sentences) that captures the personality insight from this choice.
 
@@ -43,10 +47,12 @@ Respond with valid JSON only, no markdown:
 
 export async function POST(request: Request) {
   try {
-    const { state, scene, chosenImage, apiKey } = (await request.json()) as {
+    const { state, scene, chosenImage, axis, intent, apiKey } = (await request.json()) as {
       state: PersonalityState;
       scene: string;
       chosenImage: { description: string; alt: string };
+      axis?: string;
+      intent?: string;
       apiKey?: string;
     };
 
@@ -54,13 +60,16 @@ export async function POST(request: Request) {
 
 Image chosen by the user: "${chosenImage.description}" (alt: "${chosenImage.alt}")
 
+Axis being probed: ${axis ?? "unknown"}
+Intent mapping (which choices signal which pole): ${intent ?? "not provided"}
+
 Current personality state:
 - Signals: EI=${state.signals.EI.toFixed(3)}, SN=${state.signals.SN.toFixed(3)}, TF=${state.signals.TF.toFixed(3)}, JP=${state.signals.JP.toFixed(3)}
 - Confidence: EI=${state.confidence.EI.toFixed(3)}, SN=${state.confidence.SN.toFixed(3)}, TF=${state.confidence.TF.toFixed(3)}, JP=${state.confidence.JP.toFixed(3)}
 - Turn: ${state.turn + 1}
 - Previous interpretations: ${state.choices.slice(-3).map((c) => c.interpretation).join(" | ") || "None yet"}
 
-Interpret this choice and return updated signals and confidence values. Remember to adjust incrementally from the current values.`;
+Use the intent mapping to determine the direction for the ${axis ?? "relevant"} axis. Adjust incrementally from current values.`;
 
     const completion = await callWithFallback(apiKey, (client) => client.chat.completions.create({
       model: "gpt-4o-mini",

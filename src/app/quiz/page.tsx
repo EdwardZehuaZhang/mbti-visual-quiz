@@ -179,6 +179,8 @@ export default function QuizPage() {
             state,
             scene: scene?.scene,
             chosenImage: { description: image.description, alt: image.alt },
+            axis: scene?.axis,
+            intent: scene?.intent,
             apiKey: apiKeyRef.current,
           }),
         }),
