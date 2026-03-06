@@ -33,36 +33,52 @@ function preloadImages(urls: string[]): Promise<void> {
   ).then(() => {});
 }
 
+async function fetchSceneOnly(state: PersonalityState): Promise<SceneResponse | null> {
+  try {
+    const res = await fetch("/api/scene", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ state }),
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+async function fetchImagesForScene(
+  sceneData: SceneResponse,
+  orientation: string
+): Promise<ImageResult[]> {
+  const results = await Promise.all(
+    sceneData.imageQueries.map(async (q) => {
+      try {
+        const res = await fetch(`/api/images?q=${encodeURIComponent(q)}&orientation=${orientation}`);
+        if (!res.ok) return null;
+        return res.json() as Promise<ImageResult>;
+      } catch {
+        return null;
+      }
+    })
+  );
+  return results.filter((img): img is ImageResult => img !== null);
+}
+
 async function fetchRound(
   state: PersonalityState
 ): Promise<{ scene: SceneResponse; images: ImageResult[] } | null> {
   try {
     const orientation = getOrientation();
-    const sceneRes = await fetch("/api/scene", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ state }),
-    });
-    if (!sceneRes.ok) return null;
-    const sceneData: SceneResponse = await sceneRes.json();
+    const sceneData = await fetchSceneOnly(state);
+    if (!sceneData) return null;
 
-    // Fetch top 1 photo per query in parallel
-    const imageResults = await Promise.all(
-      sceneData.imageQueries.map(async (q) => {
-        try {
-          const res = await fetch(`/api/images?q=${encodeURIComponent(q)}&orientation=${orientation}`);
-          if (!res.ok) return null;
-          return res.json() as Promise<ImageResult>;
-        } catch {
-          return null;
-        }
-      })
-    );
-    const imagesData = imageResults.filter((img): img is ImageResult => img !== null);
+    const imagesData = await fetchImagesForScene(sceneData, orientation);
     if (imagesData.length < 2) return null;
 
-    // Preload all images before returning so they're cache-ready
-    await preloadImages(imagesData.map((img) => img.url));
+    // Preload in background — don't block the prefetch promise on image downloads.
+    // By the time this prefetch item is consumed, images will be cached.
+    preloadImages(imagesData.map((img) => img.url)).catch(() => {});
 
     return { scene: sceneData, images: imagesData };
   } catch {
@@ -144,22 +160,29 @@ export default function QuizPage() {
     setSelectedId(image.id);
     setPhase("interpreting");
 
-    // After a brief visual moment, switch to loading screen immediately
+    // After a brief visual moment, switch to loading screen
     const loadingTimer = setTimeout(() => setPhase("loading"), 450);
+    const orientation = getOrientation();
+
+    // Fire next scene fetch immediately — runs in parallel with interpret
+    const nextSceneFetch = fetchSceneOnly(state);
 
     try {
-      const res = await fetch("/api/interpret", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          state,
-          scene: scene?.scene,
-          chosenImage: { description: image.description, alt: image.alt },
+      const [interpretRes, nextSceneData] = await Promise.all([
+        fetch("/api/interpret", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            state,
+            scene: scene?.scene,
+            chosenImage: { description: image.description, alt: image.alt },
+          }),
         }),
-      });
+        nextSceneFetch,
+      ]);
 
-      if (!res.ok) throw new Error(`interpret ${res.status}`);
-      const data: InterpretResponse = await res.json();
+      if (!interpretRes.ok) throw new Error(`interpret ${interpretRes.status}`);
+      const data: InterpretResponse = await interpretRes.json();
       if (!data?.state?.confidence) throw new Error("bad response");
 
       const newState: PersonalityState = {
@@ -171,20 +194,29 @@ export default function QuizPage() {
         ],
       };
       setState(newState);
-
       clearTimeout(loadingTimer);
-      // Keep first in-progress prefetch (it's been running since choosing phase started —
-      // likely already done). Clear the rest and refill with accurate updated state.
-      prefetchQueue.current = prefetchQueue.current.slice(0, 1);
-      fillQueue(newState);
 
       if (isQuizComplete(newState)) {
         sessionStorage.setItem("mbti-state", JSON.stringify(newState));
         router.push("/results");
-      } else {
-        await new Promise((r) => setTimeout(r, 300));
-        loadRound(newState);
+        return;
       }
+
+      if (nextSceneData) {
+        // Scene already done (ran parallel with interpret) — just need 4 image fetches
+        const imagesData = await fetchImagesForScene(nextSceneData, orientation);
+        if (imagesData.length >= 2) {
+          prefetchQueue.current = prefetchQueue.current.slice(0, 1);
+          fillQueue(newState);
+          showRound(nextSceneData, imagesData);
+          return;
+        }
+      }
+
+      // Fallback: use prefetch queue (scene fetch failed or images too few)
+      prefetchQueue.current = prefetchQueue.current.slice(0, 1);
+      fillQueue(newState);
+      loadRound(newState);
     } catch (err) {
       clearTimeout(loadingTimer);
       console.error("interpret failed, retrying round", err);
@@ -244,7 +276,7 @@ export default function QuizPage() {
             className="flex-1 grid grid-cols-2 min-h-0"
             style={{ gridTemplateRows: "1fr 1fr" }}
           >
-            {images.map((image, i) => (
+            {images.map((image) => (
               <motion.button
                 key={image.id}
                 animate={{
@@ -261,8 +293,9 @@ export default function QuizPage() {
                 <img
                   src={image.url}
                   alt={image.alt}
-                  className="w-full h-full object-cover"
-                  loading={i < 2 ? "eager" : "lazy"}
+                  className="w-full h-full object-cover opacity-0 transition-opacity duration-500"
+                  loading="eager"
+                  onLoad={(e) => e.currentTarget.classList.replace("opacity-0", "opacity-100")}
                 />
               </motion.button>
             ))}
