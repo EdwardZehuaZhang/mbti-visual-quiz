@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import type {
@@ -13,6 +13,25 @@ import { createInitialState, isQuizComplete } from "@/types/quiz";
 
 type Phase = "loading" | "choosing" | "interpreting";
 
+// Prefetch next scene + images while user is deciding
+async function prefetchNextRound(state: PersonalityState): Promise<{ scene: SceneResponse; images: ImageResult[] } | null> {
+  try {
+    const sceneRes = await fetch("/api/scene", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ state }),
+    });
+    if (!sceneRes.ok) return null;
+    const sceneData: SceneResponse = await sceneRes.json();
+    const imagesRes = await fetch(`/api/images?q=${encodeURIComponent(sceneData.imageQuery)}`);
+    if (!imagesRes.ok) return null;
+    const imagesData: ImageResult[] = await imagesRes.json();
+    return { scene: sceneData, images: imagesData };
+  } catch {
+    return null;
+  }
+}
+
 export default function QuizPage() {
   const router = useRouter();
   const [state, setState] = useState<PersonalityState>(createInitialState);
@@ -22,45 +41,77 @@ export default function QuizPage() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [roundKey, setRoundKey] = useState(0);
 
-  const loadRound = useCallback(async (currentState: PersonalityState) => {
-    setPhase("loading");
-    setSelectedId(null);
+  // Holds prefetched next round data
+  const prefetchRef = useRef<Promise<{ scene: SceneResponse; images: ImageResult[] } | null> | null>(null);
 
-    const sceneRes = await fetch("/api/scene", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ state: currentState }),
-    });
-    const sceneData: SceneResponse = await sceneRes.json();
+  const showRound = useCallback((sceneData: SceneResponse, imagesData: ImageResult[]) => {
     setScene(sceneData);
-
-    const pinIdParam = currentState.lastPinId
-      ? `&pinId=${encodeURIComponent(currentState.lastPinId)}`
-      : "";
-    const imagesRes = await fetch(
-      `/api/images?q=${encodeURIComponent(sceneData.imageQuery)}${pinIdParam}`
-    );
-    const imagesData: ImageResult[] = await imagesRes.json();
     setImages(imagesData);
-
     setRoundKey((k) => k + 1);
     setPhase("choosing");
   }, []);
 
+  const loadRound = useCallback(async (currentState: PersonalityState) => {
+    setPhase("loading");
+    setSelectedId(null);
+
+    // Check for prefetched data first
+    if (prefetchRef.current) {
+      const prefetched = await prefetchRef.current;
+      prefetchRef.current = null;
+      if (prefetched) {
+        showRound(prefetched.scene, prefetched.images);
+        return;
+      }
+    }
+
+    // No prefetch available — fetch now
+    try {
+      const pinIdParam = currentState.lastPinId
+        ? `&pinId=${encodeURIComponent(currentState.lastPinId)}`
+        : "";
+      const [sceneRes, ] = await Promise.all([
+        fetch("/api/scene", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ state: currentState }),
+        }),
+      ]);
+      const sceneData: SceneResponse = await sceneRes.json();
+      const imagesRes = await fetch(`/api/images?q=${encodeURIComponent(sceneData.imageQuery)}${pinIdParam}`);
+      const imagesData: ImageResult[] = await imagesRes.json();
+      showRound(sceneData, imagesData);
+    } catch {
+      setPhase("loading");
+    }
+  }, [showRound]);
+
+  // On mount: try to use data prefetched from landing page
   useEffect(() => {
-    loadRound(state);
+    const prefetchedScene = sessionStorage.getItem("prefetch-scene");
+    const prefetchedImages = sessionStorage.getItem("prefetch-images");
+    if (prefetchedScene && prefetchedImages) {
+      sessionStorage.removeItem("prefetch-scene");
+      sessionStorage.removeItem("prefetch-images");
+      const sceneData: SceneResponse = JSON.parse(prefetchedScene);
+      const imagesData: ImageResult[] = JSON.parse(prefetchedImages);
+      showRound(sceneData, imagesData);
+    } else {
+      loadRound(state);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChoice = async (image: ImageResult) => {
     if (phase !== "choosing") return;
 
-    // Instant visual feedback — no delay
+    // Instant visual feedback
     setSelectedId(image.id);
     setPhase("interpreting");
 
     try {
-      const res = await fetch("/api/interpret", {
+      // Fire interpret + prefetch next round in parallel
+      const interpretPromise = fetch("/api/interpret", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -70,12 +121,14 @@ export default function QuizPage() {
         }),
       });
 
+      // Start prefetching next scene immediately using current state (approximate but fast)
+      prefetchRef.current = prefetchNextRound(state);
+
+      const res = await interpretPromise;
       if (!res.ok) throw new Error(`interpret ${res.status}`);
 
       const data: InterpretResponse = await res.json();
-
-      // Guard against malformed response
-      if (!data?.state?.confidence?.EI === undefined) throw new Error("bad response");
+      if (!data?.state?.confidence) throw new Error("bad response");
 
       const newState: PersonalityState = {
         ...data.state,
@@ -87,16 +140,19 @@ export default function QuizPage() {
       };
       setState(newState);
 
+      // Replace prefetch with one based on actual updated state for better accuracy
+      prefetchRef.current = prefetchNextRound(newState);
+
       if (isQuizComplete(newState)) {
         sessionStorage.setItem("mbti-state", JSON.stringify(newState));
         router.push("/results");
       } else {
-        await new Promise((r) => setTimeout(r, 400));
+        await new Promise((r) => setTimeout(r, 300));
         loadRound(newState);
       }
     } catch (err) {
       console.error("interpret failed, retrying round", err);
-      // Retry the same round gracefully
+      prefetchRef.current = null;
       setPhase("choosing");
       setSelectedId(null);
     }
@@ -131,7 +187,7 @@ export default function QuizPage() {
         </div>
       )}
 
-      {/* Image grid — fills entire remaining viewport */}
+      {/* Image grid */}
       <AnimatePresence mode="wait">
         {phase !== "loading" && images.length > 0 && (
           <motion.div
@@ -170,7 +226,7 @@ export default function QuizPage() {
         )}
       </AnimatePresence>
 
-      {/* Turn counter — bottom center */}
+      {/* Turn counter */}
       <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none">
         <span className="text-white/40 text-sm font-light tracking-widest">
           {state.turn + 1} / 15

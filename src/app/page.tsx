@@ -2,9 +2,33 @@
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { createInitialState } from "@/types/quiz";
+import type { SceneResponse, ImageResult } from "@/types/quiz";
+
+async function prefetchFirstRound() {
+  try {
+    const state = createInitialState();
+    const sceneRes = await fetch("/api/scene", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ state }),
+    });
+    const sceneData: SceneResponse = await sceneRes.json();
+    const imagesRes = await fetch(`/api/images?q=${encodeURIComponent(sceneData.imageQuery)}`);
+    const imagesData: ImageResult[] = await imagesRes.json();
+    sessionStorage.setItem("prefetch-scene", JSON.stringify(sceneData));
+    sessionStorage.setItem("prefetch-images", JSON.stringify(imagesData));
+  } catch {}
+}
 
 export default function Home() {
   const router = useRouter();
+
+  useEffect(() => {
+    // Start fetching round 1 immediately in the background
+    prefetchFirstRound();
+  }, []);
 
   return (
     <main
