@@ -63,7 +63,7 @@ async function fetchImagesForScene(
       }
     })
   );
-  return results.filter((img): img is ImageResult => img !== null);
+  return results.filter((img): img is ImageResult & { queryIndex: number } => img !== null);
 }
 
 async function fetchRound(
