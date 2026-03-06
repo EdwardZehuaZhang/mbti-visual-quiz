@@ -56,7 +56,7 @@ ${choicesSummary}
 Based on all of this data, determine the MBTI type, write a personalized paragraph that references their actual choices, and provide the trait breakdown.`;
 
     const completion = await getOpenAI().chat.completions.create({
-      model: "gpt-4.5-preview",
+      model: "gpt-5.4",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userMessage },
