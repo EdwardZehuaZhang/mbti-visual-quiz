@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { usePathname } from "next/navigation";
 
 interface CommunityResult {
   id: string;
@@ -25,20 +24,62 @@ function parseImages(raw: Array<{ url: string; pinId: string }> | string): Array
 
 export default function CommunityPage() {
   const router = useRouter();
-  const pathname = usePathname();
   const [results, setResults] = useState<CommunityResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const offsetRef = useRef(0);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const fetchPage = useCallback(async (offset: number) => {
+    try {
+      const res = await fetch("/api/community", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ offset }),
+      });
+      const json = await res.json();
+      return json as { data: CommunityResult[]; hasMore: boolean };
+    } catch {
+      return null;
+    }
+  }, []);
 
   useEffect(() => {
-    setLoading(true);
-    fetch("/api/community", { method: "POST" })
-      .then((r) => r.json())
-      .then((data) => {
-        setResults(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [pathname]);
+    fetchPage(0).then((json) => {
+      if (json) {
+        setResults(json.data);
+        setHasMore(json.hasMore);
+        offsetRef.current = json.data.length;
+      }
+      setLoading(false);
+    });
+  }, [fetchPage]);
+
+  useEffect(() => {
+    if (!hasMore) return;
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadingMore) {
+          setLoadingMore(true);
+          fetchPage(offsetRef.current).then((json) => {
+            if (json) {
+              setResults((prev) => [...prev, ...json.data]);
+              setHasMore(json.hasMore);
+              offsetRef.current += json.data.length;
+            }
+            setLoadingMore(false);
+          });
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, fetchPage]);
 
   return (
     <main className="min-h-screen px-4 py-12">
@@ -107,6 +148,14 @@ export default function CommunityPage() {
                 </motion.div>
               );
             })}
+          </div>
+        )}
+
+        {/* Infinite scroll sentinel */}
+        <div ref={sentinelRef} className="h-1" />
+        {loadingMore && (
+          <div className="flex justify-center py-8">
+            <div className="w-6 h-6 rounded-full border-2 border-white/10 border-t-white/50 animate-spin" />
           </div>
         )}
       </div>
