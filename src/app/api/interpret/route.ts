@@ -14,79 +14,69 @@ async function callWithFallback(apiKey: string | undefined, fn: (client: OpenAI)
   return fn(new OpenAI({ apiKey: process.env.OPENAI_API_KEY }));
 }
 
-const SYSTEM_PROMPT = `You are a personality psychologist interpreting image choices in an MBTI personality assessment. You analyze what a person's visual preference reveals about their personality.
+const INTERPRETATION_PROMPT = `You are a personality psychologist. Write a brief 1-2 sentence insight about what a person's image choice reveals about their personality.
 
-You receive:
-- The scene that was presented
-- The image the user chose (its description)
-- The MBTI axis being probed (e.g. "EI", "JP")
-- The intent mapping: which choices signal which pole (e.g. "busy=E, quiet=I")
-- The current personality state (signals and confidence for each axis)
-
-Your job is to:
-1. Use the axis and intent to determine what this choice signals. The intent is the authoritative mapping — if the chosen image matches the "E" keywords, push EI positive; if it matches "I" keywords, push EI negative. Apply similar logic for all axes.
-
-2. Update the personality signals and confidence. Signals range from -1.0 to 1.0:
-   - EI: -1.0 = strong Introversion, +1.0 = strong Extraversion
-   - SN: -1.0 = strong Sensing, +1.0 = strong iNtuition
-   - TF: -1.0 = strong Thinking, +1.0 = strong Feeling
-   - JP: -1.0 = strong Judging, +1.0 = strong Perceiving
-
-   Adjust only the targeted axis signal incrementally (typically 0.1-0.2). Other axes may shift slightly (0.0-0.05) if the choice is clearly relevant. Confidence should increase with each choice (typically 0.05-0.15 for the targeted axis, 0.0-0.05 for others).
-
-   IMPORTANT: You must produce an unbiased distribution across all 16 types. Do NOT systematically favor E over I, N over S, F over T, or P over J. Let the intent mapping drive direction.
-
-3. Write a brief interpretation (1-2 sentences) that captures the personality insight from this choice.
+You receive the scene, the chosen image description, the MBTI axis being probed, and which pole the choice signals. Be specific and insightful — reference what about this image likely resonated with them.
 
 Respond with valid JSON only, no markdown:
-{
-  "signals": { "EI": number, "SN": number, "TF": number, "JP": number },
-  "confidence": { "EI": number, "SN": number, "TF": number, "JP": number },
-  "interpretation": "string"
-}`;
+{ "interpretation": "string" }`;
+
+// Maps each pole letter to the signal direction (+1 or -1)
+const POLE_DIRECTION: Record<string, number> = {
+  E: 1, I: -1,
+  N: 1, S: -1,
+  F: 1, T: -1,
+  P: 1, J: -1,
+};
+
+const SIGNAL_DELTA = 0.15;
+const CONFIDENCE_DELTA = 0.10;
 
 export async function POST(request: Request) {
   try {
-    const { state, scene, chosenImage, axis, intent, apiKey } = (await request.json()) as {
+    const { state, scene, chosenImage, axis, chosenPole, apiKey } = (await request.json()) as {
       state: PersonalityState;
       scene: string;
       chosenImage: { description: string; alt: string };
       axis?: string;
-      intent?: string;
+      chosenPole?: string;
       apiKey?: string;
     };
 
-    const userMessage = `Scene presented: "${scene}"
+    // Deterministic signal update — no LLM involved
+    const newSignals = { ...state.signals };
+    const newConfidence = { ...state.confidence };
 
-Image chosen by the user: "${chosenImage.description}" (alt: "${chosenImage.alt}")
+    if (axis && chosenPole && axis in newSignals && POLE_DIRECTION[chosenPole] !== undefined) {
+      const axisKey = axis as keyof typeof newSignals;
+      const direction = POLE_DIRECTION[chosenPole];
+      newSignals[axisKey] = Math.max(-1, Math.min(1, newSignals[axisKey] + direction * SIGNAL_DELTA));
+      newConfidence[axisKey] = Math.min(1, newConfidence[axisKey] + CONFIDENCE_DELTA);
+    }
 
-Axis being probed: ${axis ?? "unknown"}
-Intent mapping (which choices signal which pole): ${intent ?? "not provided"}
+    // LLM only for the interpretation text
+    const userMessage = `Scene: "${scene}"
+Chosen image: "${chosenImage.description}"
+Axis probed: ${axis ?? "unknown"}, signals ${chosenPole ?? "unknown"}
 
-Current personality state:
-- Signals: EI=${state.signals.EI.toFixed(3)}, SN=${state.signals.SN.toFixed(3)}, TF=${state.signals.TF.toFixed(3)}, JP=${state.signals.JP.toFixed(3)}
-- Confidence: EI=${state.confidence.EI.toFixed(3)}, SN=${state.confidence.SN.toFixed(3)}, TF=${state.confidence.TF.toFixed(3)}, JP=${state.confidence.JP.toFixed(3)}
-- Turn: ${state.turn + 1}
-- Previous interpretations: ${state.choices.slice(-3).map((c) => c.interpretation).join(" | ") || "None yet"}
-
-Use the intent mapping to determine the direction for the ${axis ?? "relevant"} axis. Adjust incrementally from current values.`;
+Write a 1-2 sentence personality insight about this choice.`;
 
     const completion = await callWithFallback(apiKey, (client) => client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: INTERPRETATION_PROMPT },
         { role: "user", content: userMessage },
       ],
       temperature: 0.7,
-      max_tokens: 300,
+      max_tokens: 150,
     })) as OpenAI.Chat.Completions.ChatCompletion;
 
     const content = completion.choices[0].message.content || "";
     const parsed = JSON.parse(content);
 
     const updatedState: PersonalityState = {
-      signals: parsed.signals,
-      confidence: parsed.confidence,
+      signals: newSignals,
+      confidence: newConfidence,
       choices: [
         ...state.choices,
         {

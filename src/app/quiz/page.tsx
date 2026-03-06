@@ -52,11 +52,12 @@ async function fetchImagesForScene(
   orientation: string
 ): Promise<ImageResult[]> {
   const results = await Promise.all(
-    sceneData.imageQueries.map(async (q) => {
+    sceneData.imageQueries.map(async (q, i) => {
       try {
         const res = await fetch(`/api/images?q=${encodeURIComponent(q)}&orientation=${orientation}`);
         if (!res.ok) return null;
-        return res.json() as Promise<ImageResult>;
+        const img = await res.json() as ImageResult;
+        return { ...img, queryIndex: i };
       } catch {
         return null;
       }
@@ -180,7 +181,7 @@ export default function QuizPage() {
             scene: scene?.scene,
             chosenImage: { description: image.description, alt: image.alt },
             axis: scene?.axis,
-            intent: scene?.intent,
+            chosenPole: scene?.queryPoles?.[image.queryIndex ?? -1],
             apiKey: apiKeyRef.current,
           }),
         }),

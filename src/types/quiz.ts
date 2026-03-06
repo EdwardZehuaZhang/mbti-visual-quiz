@@ -16,6 +16,7 @@ export interface SceneResponse {
   imageQueries: string[];
   axis: string;
   intent: string;
+  queryPoles: string[];
 }
 
 export interface ImageResult {
@@ -23,6 +24,7 @@ export interface ImageResult {
   url: string;
   description: string;
   alt: string;
+  queryIndex?: number;
 }
 
 export interface InterpretResponse {
