@@ -31,7 +31,7 @@ export default function CommunityPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch("/api/community", { cache: "no-store" })
+    fetch("/api/community", { method: "POST" })
       .then((r) => r.json())
       .then((data) => {
         setResults(Array.isArray(data) ? data : []);

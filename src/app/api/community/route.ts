@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
 
-export const dynamic = "force-dynamic";
-
-export async function GET() {
+export async function POST() {
   try {
     const { data, error } = await getSupabase()
       .from("quiz_results")
