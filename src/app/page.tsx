@@ -56,7 +56,7 @@ export default function Home() {
           transition={{ delay: 0.6, duration: 1 }}
           className="text-lg md:text-xl text-white/60 font-light max-w-md mx-auto"
         >
-          Choose images that speak to you, and we&apos;ll guess who you are. Touch to start.
+          Choose images that speak to you, and we&apos;ll guess who you are. Tap to start.
         </motion.p>
       </motion.div>
     </main>
