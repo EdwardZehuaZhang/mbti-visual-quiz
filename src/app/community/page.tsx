@@ -14,6 +14,15 @@ interface CommunityResult {
   created_at: string;
 }
 
+function parseImages(raw: Array<{ url: string; pinId: string }> | string): Array<{ url: string }> {
+  try {
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function CommunityPage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -61,51 +70,43 @@ export default function CommunityPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {results.map((result, i) => (
-              <motion.div
-                key={result.id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05, duration: 0.4 }}
-                className="bg-white/[0.03] border border-white/5 overflow-hidden"
-              >
-                {/* Header */}
-                <div className="px-3 pt-3 pb-2">
-                  <p className="text-white/30 text-xs font-light truncate">
-                    {result.name}
-                  </p>
-                  <p className="text-white text-2xl font-extralight tracking-[0.15em]">
-                    {result.mbti_type}
-                  </p>
-                </div>
-
-                {/* Image grid */}
-                {(() => {
-                  const images = typeof result.selected_images === "string"
-                    ? JSON.parse(result.selected_images)
-                    : result.selected_images;
-                  if (!Array.isArray(images) || images.length === 0) return null;
-                  return (
-                  <div className="grid grid-cols-4">
-                    {images.slice(0, 8).map((img: { url: string }, j: number) => (
-                      <div
-                        key={j}
-                        className="aspect-square overflow-hidden"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={img.url}
-                          alt=""
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      </div>
-                    ))}
+            {results.map((result, i) => {
+              const images = parseImages(result.selected_images);
+              return (
+                <motion.div
+                  key={result.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05, duration: 0.4 }}
+                  className="bg-white/[0.03] border border-white/5 overflow-hidden"
+                >
+                  <div className="px-3 pt-3 pb-2">
+                    <p className="text-white/30 text-xs font-light truncate">
+                      {result.name}
+                    </p>
+                    <p className="text-white text-2xl font-extralight tracking-[0.15em]">
+                      {result.mbti_type}
+                    </p>
                   </div>
-                  );
-                })()}
-              </motion.div>
-            ))}
+
+                  {images.length > 0 && (
+                    <div className="grid grid-cols-4">
+                      {images.slice(0, 8).map((img, j) => (
+                        <div key={j} className="aspect-square overflow-hidden">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={img.url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>
