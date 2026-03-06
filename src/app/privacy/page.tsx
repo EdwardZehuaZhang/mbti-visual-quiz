@@ -7,7 +7,7 @@ export default function PrivacyPolicy() {
       <section className="mb-10">
         <h2 className="text-white text-lg mb-3">Overview</h2>
         <p className="leading-relaxed">
-          MBTI x Pinterest is a visual personality quiz that uses images to help you discover your MBTI personality type.
+          MBTI x Pexels is a visual personality quiz that uses images to help you discover your MBTI personality type.
           We take your privacy seriously. This policy explains what data we collect and how we use it.
         </p>
       </section>
@@ -22,10 +22,10 @@ export default function PrivacyPolicy() {
       </section>
 
       <section className="mb-10">
-        <h2 className="text-white text-lg mb-3">Pinterest</h2>
+        <h2 className="text-white text-lg mb-3">Pexels</h2>
         <p className="leading-relaxed">
-          We use the Pinterest API to display publicly available pins as image options. We do not access your Pinterest
-          account, post on your behalf, or store any Pinterest user data. Image content is fetched server-side and
+          We use the Pexels API to display publicly available images as options. We do not access your Pexels
+          account, post on your behalf, or store any Pexels user data. Image content is fetched server-side and
           displayed anonymously.
         </p>
       </section>

@@ -47,7 +47,7 @@ export default function Home() {
         className="relative z-10 text-center max-w-2xl"
       >
         <h1 className="text-5xl md:text-7xl font-light tracking-tight mb-8 leading-tight text-white">
-          MBTI x Pinterest
+          MBTI x Pexels
         </h1>
 
         <motion.p
