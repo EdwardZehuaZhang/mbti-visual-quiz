@@ -69,6 +69,14 @@ export default function ResultsPage() {
     const parsedState: PersonalityState = JSON.parse(stored);
     setState(parsedState);
 
+    // Use cached results if available
+    const cached = sessionStorage.getItem("mbti-results");
+    if (cached) {
+      setResults(JSON.parse(cached));
+      setLoading(false);
+      return;
+    }
+
     const apiKey = sessionStorage.getItem("user-api-key") ?? undefined;
 
     fetch("/api/results", {
@@ -78,6 +86,7 @@ export default function ResultsPage() {
     })
       .then((r) => r.json())
       .then((data: ResultsResponse) => {
+        sessionStorage.setItem("mbti-results", JSON.stringify(data));
         setResults(data);
         setLoading(false);
 
@@ -93,7 +102,7 @@ export default function ResultsPage() {
               traitBreakdown: data.traitBreakdown,
               selectedImages: parsedState.selectedImages,
             }),
-          }).catch(() => {});
+          }).catch((err) => console.error("Community save failed:", err));
         }
       });
   }, []);

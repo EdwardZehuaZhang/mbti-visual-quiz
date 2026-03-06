@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { createInitialState } from "@/types/quiz";
@@ -32,6 +32,14 @@ export default function OnboardingPage() {
   const [name, setName] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    // Clear previous quiz session when starting fresh
+    sessionStorage.removeItem("mbti-state");
+    sessionStorage.removeItem("mbti-results");
+    sessionStorage.removeItem("prefetch-scene");
+    sessionStorage.removeItem("prefetch-images");
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
