@@ -182,7 +182,7 @@ export default function QuizPage() {
     }
   };
 
-  const progress = state.turn / 15;
+  const progress = state.turn / 11;
   const avgConfidence = state.confidence
     ? (state.confidence.EI + state.confidence.SN + state.confidence.TF + state.confidence.JP) / 4
     : 0;
@@ -220,7 +220,7 @@ export default function QuizPage() {
         )}
       </AnimatePresence>
 
-      {/* Image grid — all 4 images preloaded before shown */}
+      {/* Image grid 鈥?all 4 images preloaded before shown */}
       <AnimatePresence mode="wait">
         {phase !== "loading" && images.length > 0 && (
           <motion.div
@@ -261,7 +261,7 @@ export default function QuizPage() {
       {/* Turn counter */}
       <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none">
         <span className="text-white/40 text-sm font-light tracking-widest">
-          {state.turn + 1} / 15
+          {state.turn + 1} / 11
         </span>
       </div>
     </main>

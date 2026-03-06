@@ -58,5 +58,5 @@ export function isQuizComplete(state: PersonalityState): boolean {
     confidence.SN > 0.75 &&
     confidence.TF > 0.75 &&
     confidence.JP > 0.75;
-  return allConfident || state.turn >= 15;
+  return allConfident || state.turn >= 11;
 }

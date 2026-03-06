@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       "Current personality state:",
       `- Signals: EI=${state.signals.EI.toFixed(2)}, SN=${state.signals.SN.toFixed(2)}, TF=${state.signals.TF.toFixed(2)}, JP=${state.signals.JP.toFixed(2)}`,
       `- Confidence: EI=${state.confidence.EI.toFixed(2)}, SN=${state.confidence.SN.toFixed(2)}, TF=${state.confidence.TF.toFixed(2)}, JP=${state.confidence.JP.toFixed(2)}`,
-      `- Turn: ${state.turn + 1} of 15`,
+      `- Turn: ${state.turn + 1} of 11`,
       `- Lowest confidence axis: ${lowestConfidenceAxis}`,
       `- Previous choices: ${state.choices.length > 0 ? state.choices.slice(-3).map((c) => c.interpretation).join("; ") : "None yet"}`,
       "",
