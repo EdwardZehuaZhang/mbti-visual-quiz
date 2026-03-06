@@ -138,6 +138,9 @@ export default function QuizPage() {
     setSelectedId(image.id);
     setPhase("interpreting");
 
+    // After a brief visual moment, switch to loading screen immediately
+    const loadingTimer = setTimeout(() => setPhase("loading"), 450);
+
     try {
       const res = await fetch("/api/interpret", {
         method: "POST",
@@ -163,6 +166,7 @@ export default function QuizPage() {
       };
       setState(newState);
 
+      clearTimeout(loadingTimer);
       // Refill queue with accurate updated state
       prefetchQueue.current = [];
       fillQueue(newState);
@@ -175,6 +179,7 @@ export default function QuizPage() {
         loadRound(newState);
       }
     } catch (err) {
+      clearTimeout(loadingTimer);
       console.error("interpret failed, retrying round", err);
       prefetchQueue.current = [];
       setPhase("choosing");
@@ -220,7 +225,7 @@ export default function QuizPage() {
         )}
       </AnimatePresence>
 
-      {/* Image grid 鈥?all 4 images preloaded before shown */}
+      {/* Image grid 閳?all 4 images preloaded before shown */}
       <AnimatePresence mode="wait">
         {phase !== "loading" && images.length > 0 && (
           <motion.div
