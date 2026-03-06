@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import type { PersonalityState, InterpretResponse } from "@/types/quiz";
 
-function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
+function getOpenAI(apiKey?: string) { return new OpenAI({ apiKey: apiKey || process.env.OPENAI_API_KEY }); }
 
 const SYSTEM_PROMPT = `You are a personality psychologist interpreting image choices in an MBTI personality assessment. You analyze what a person's visual preference reveals about their personality.
 
@@ -33,10 +33,11 @@ Respond with valid JSON only, no markdown:
 
 export async function POST(request: Request) {
   try {
-    const { state, scene, chosenImage } = (await request.json()) as {
+    const { state, scene, chosenImage, apiKey } = (await request.json()) as {
       state: PersonalityState;
       scene: string;
       chosenImage: { description: string; alt: string };
+      apiKey?: string;
     };
 
     const userMessage = `Scene presented: "${scene}"
@@ -51,7 +52,7 @@ Current personality state:
 
 Interpret this choice and return updated signals and confidence values. Remember to adjust incrementally from the current values.`;
 
-    const completion = await getOpenAI().chat.completions.create({
+    const completion = await getOpenAI(apiKey).chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },

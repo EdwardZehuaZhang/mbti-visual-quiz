@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import type { PersonalityState } from "@/types/quiz";
 
-function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
+function getOpenAI(apiKey?: string) { return new OpenAI({ apiKey: apiKey || process.env.OPENAI_API_KEY }); }
 
 const SYSTEM_PROMPT = `You are a personality psychologist writing the final results of an MBTI visual personality assessment. You have access to the full history of a person's image choices and the personality signals derived from them.
 
@@ -33,8 +33,8 @@ Respond with valid JSON only, no markdown:
   }
 }`;
 
-async function generateResults(model: string, userMessage: string) {
-  const completion = await getOpenAI().chat.completions.create({
+async function generateResults(model: string, userMessage: string, apiKey?: string) {
+  const completion = await getOpenAI(apiKey).chat.completions.create({
     model,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
@@ -50,7 +50,7 @@ async function generateResults(model: string, userMessage: string) {
 
 export async function POST(request: Request) {
   try {
-    const { state } = (await request.json()) as { state: PersonalityState };
+    const { state, apiKey } = (await request.json()) as { state: PersonalityState; apiKey?: string };
 
     const choicesSummary = state.choices
       .map(
@@ -75,7 +75,7 @@ Based on all of this data, determine the MBTI type, write a personalized paragra
     let lastError: unknown;
     for (const model of models) {
       try {
-        const results = await generateResults(model, userMessage);
+        const results = await generateResults(model, userMessage, apiKey);
         return NextResponse.json(results);
       } catch (err) {
         console.error(`Results error with ${model}:`, err);

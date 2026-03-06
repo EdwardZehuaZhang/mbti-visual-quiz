@@ -33,12 +33,12 @@ function preloadImages(urls: string[]): Promise<void> {
   ).then(() => {});
 }
 
-async function fetchSceneOnly(state: PersonalityState): Promise<SceneResponse | null> {
+async function fetchSceneOnly(state: PersonalityState, apiKey?: string): Promise<SceneResponse | null> {
   try {
     const res = await fetch("/api/scene", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ state }),
+      body: JSON.stringify({ state, apiKey }),
     });
     if (!res.ok) return null;
     return res.json();
@@ -66,11 +66,12 @@ async function fetchImagesForScene(
 }
 
 async function fetchRound(
-  state: PersonalityState
+  state: PersonalityState,
+  apiKey?: string
 ): Promise<{ scene: SceneResponse; images: ImageResult[] } | null> {
   try {
     const orientation = getOrientation();
-    const sceneData = await fetchSceneOnly(state);
+    const sceneData = await fetchSceneOnly(state, apiKey);
     if (!sceneData) return null;
 
     const imagesData = await fetchImagesForScene(sceneData, orientation);
@@ -96,10 +97,11 @@ export default function QuizPage() {
 
   // Queue of prefetched rounds (up to 3 ahead)
   const prefetchQueue = useRef<Promise<{ scene: SceneResponse; images: ImageResult[] } | null>[]>([]);
+  const apiKeyRef = useRef<string | undefined>(undefined);
 
   const fillQueue = useCallback((currentState: PersonalityState) => {
     while (prefetchQueue.current.length < 3) {
-      prefetchQueue.current.push(fetchRound(currentState));
+      prefetchQueue.current.push(fetchRound(currentState, apiKeyRef.current));
     }
   }, []);
 
@@ -133,8 +135,9 @@ export default function QuizPage() {
     }
   }, [showRound, fillQueue]);
 
-  // On mount: try prefetched data from landing page
+  // On mount: read API key and try prefetched data from onboarding
   useEffect(() => {
+    apiKeyRef.current = sessionStorage.getItem("user-api-key") ?? undefined;
     const prefetchedScene = sessionStorage.getItem("prefetch-scene");
     const prefetchedImages = sessionStorage.getItem("prefetch-images");
     if (prefetchedScene && prefetchedImages) {
@@ -165,7 +168,7 @@ export default function QuizPage() {
     const orientation = getOrientation();
 
     // Fire next scene fetch immediately — runs in parallel with interpret
-    const nextSceneFetch = fetchSceneOnly(state);
+    const nextSceneFetch = fetchSceneOnly(state, apiKeyRef.current);
 
     try {
       const [interpretRes, nextSceneData] = await Promise.all([
@@ -176,6 +179,7 @@ export default function QuizPage() {
             state,
             scene: scene?.scene,
             chosenImage: { description: image.description, alt: image.alt },
+            apiKey: apiKeyRef.current,
           }),
         }),
         nextSceneFetch,

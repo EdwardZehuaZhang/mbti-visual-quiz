@@ -69,15 +69,32 @@ export default function ResultsPage() {
     const parsedState: PersonalityState = JSON.parse(stored);
     setState(parsedState);
 
+    const apiKey = sessionStorage.getItem("user-api-key") ?? undefined;
+
     fetch("/api/results", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ state: parsedState }),
+      body: JSON.stringify({ state: parsedState, apiKey }),
     })
       .then((r) => r.json())
       .then((data: ResultsResponse) => {
         setResults(data);
         setLoading(false);
+
+        const name = sessionStorage.getItem("user-name");
+        if (name) {
+          fetch("/api/community/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name,
+              mbtiType: data.type,
+              paragraph: data.paragraph,
+              traitBreakdown: data.traitBreakdown,
+              selectedImages: parsedState.selectedImages,
+            }),
+          }).catch(() => {});
+        }
       });
   }, []);
 
@@ -196,12 +213,20 @@ export default function ResultsPage() {
         transition={{ delay: 2.5, duration: 0.5 }}
         className="text-center"
       >
-        <Link
-          href="/"
-          className="inline-block border border-white/10 text-white/30 px-8 py-3 text-sm tracking-widest uppercase font-light hover:border-white/40 hover:text-white transition-all duration-500"
-        >
-          Take again
-        </Link>
+        <div className="flex gap-4 justify-center flex-wrap">
+          <Link
+            href="/"
+            className="inline-block border border-white/10 text-white/30 px-8 py-3 text-sm tracking-widest uppercase font-light hover:border-white/40 hover:text-white transition-all duration-500"
+          >
+            Take again
+          </Link>
+          <Link
+            href="/community"
+            className="inline-block border border-white/10 text-white/30 px-8 py-3 text-sm tracking-widest uppercase font-light hover:border-white/40 hover:text-white transition-all duration-500"
+          >
+            Community
+          </Link>
+        </div>
       </motion.div>
     </main>
   );

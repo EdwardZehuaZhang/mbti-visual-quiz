@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import type { PersonalityState } from "@/types/quiz";
 
-function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
+function getOpenAI(apiKey?: string) { return new OpenAI({ apiKey: apiKey || process.env.OPENAI_API_KEY }); }
 
 const SYSTEM_PROMPT = [
   "You are a personality psychologist designing a visual MBTI quiz.",
@@ -47,7 +47,7 @@ const SYSTEM_PROMPT = [
 
 export async function POST(request: Request) {
   try {
-    const { state } = (await request.json()) as { state: PersonalityState };
+    const { state, apiKey } = (await request.json()) as { state: PersonalityState; apiKey?: string };
 
     const lowestConfidenceAxis = Object.entries(state.confidence).sort(
       ([, a], [, b]) => a - b
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       `Generate a scene targeting the ${lowestConfidenceAxis} axis. Pick ONE specific visual subject. Different from any previous scenes.`
     ].join("\n");
 
-    const completion = await getOpenAI().chat.completions.create({
+    const completion = await getOpenAI(apiKey).chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
