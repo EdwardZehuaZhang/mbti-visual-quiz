@@ -89,7 +89,7 @@ export default function ResultsPage() {
           transition={{ duration: 2, repeat: Infinity }}
           className="text-white/60 text-sm tracking-widest uppercase font-light"
         >
-          Composing your profile...
+          Guessing your MBTI...
         </motion.div>
       </main>
     );
@@ -186,9 +186,6 @@ export default function ResultsPage() {
               </motion.div>
             ))}
           </div>
-          <p className="text-white/40 text-xs tracking-widest font-light text-center mt-4">
-            Every image you chose. Every version of you.
-          </p>
         </motion.div>
       )}
 
