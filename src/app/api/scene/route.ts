@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import type { PersonalityState, SceneResponse } from "@/types/quiz";
+import type { PersonalityState } from "@/types/quiz";
 
 function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
 
