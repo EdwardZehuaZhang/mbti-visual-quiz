@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 interface CommunityResult {
   id: string;
@@ -15,18 +16,20 @@ interface CommunityResult {
 
 export default function CommunityPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [results, setResults] = useState<CommunityResult[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/community")
+    setLoading(true);
+    fetch("/api/community", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         setResults(Array.isArray(data) ? data : []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [pathname]);
 
   return (
     <main className="min-h-screen px-4 py-12">
