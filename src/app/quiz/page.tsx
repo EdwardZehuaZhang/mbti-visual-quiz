@@ -76,9 +76,7 @@ async function fetchRound(
     const imagesData = await fetchImagesForScene(sceneData, orientation);
     if (imagesData.length < 2) return null;
 
-    // Preload in background — don't block the prefetch promise on image downloads.
-    // By the time this prefetch item is consumed, images will be cached.
-    preloadImages(imagesData.map((img) => img.url)).catch(() => {});
+    await preloadImages(imagesData.map((img) => img.url));
 
     return { scene: sceneData, images: imagesData };
   } catch {
@@ -203,9 +201,10 @@ export default function QuizPage() {
       }
 
       if (nextSceneData) {
-        // Scene already done (ran parallel with interpret) — just need 4 image fetches
+        // Scene already done (ran parallel with interpret) — fetch images then preload
         const imagesData = await fetchImagesForScene(nextSceneData, orientation);
         if (imagesData.length >= 2) {
+          await preloadImages(imagesData.map((img) => img.url));
           prefetchQueue.current = prefetchQueue.current.slice(0, 1);
           fillQueue(newState);
           showRound(nextSceneData, imagesData);
@@ -293,9 +292,8 @@ export default function QuizPage() {
                 <img
                   src={image.url}
                   alt={image.alt}
-                  className="w-full h-full object-cover opacity-0 transition-opacity duration-500"
+                  className="w-full h-full object-cover"
                   loading="eager"
-                  onLoad={(e) => e.currentTarget.classList.replace("opacity-0", "opacity-100")}
                 />
               </motion.button>
             ))}
