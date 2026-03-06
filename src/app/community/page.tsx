@@ -10,7 +10,7 @@ interface CommunityResult {
   name: string;
   mbti_type: string;
   paragraph: string;
-  selected_images: Array<{ url: string; pinId: string }>;
+  selected_images: Array<{ url: string; pinId: string }> | string;
   created_at: string;
 }
 
@@ -80,9 +80,14 @@ export default function CommunityPage() {
                 </div>
 
                 {/* Image grid */}
-                {result.selected_images?.length > 0 && (
+                {(() => {
+                  const images = typeof result.selected_images === "string"
+                    ? JSON.parse(result.selected_images)
+                    : result.selected_images;
+                  if (!Array.isArray(images) || images.length === 0) return null;
+                  return (
                   <div className="grid grid-cols-4">
-                    {result.selected_images.slice(0, 8).map((img, j) => (
+                    {images.slice(0, 8).map((img: { url: string }, j: number) => (
                       <div
                         key={j}
                         className="aspect-square overflow-hidden"
@@ -97,7 +102,8 @@ export default function CommunityPage() {
                       </div>
                     ))}
                   </div>
-                )}
+                  );
+                })()}
               </motion.div>
             ))}
           </div>
