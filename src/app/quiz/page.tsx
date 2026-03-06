@@ -46,14 +46,20 @@ async function fetchRound(
     if (!sceneRes.ok) return null;
     const sceneData: SceneResponse = await sceneRes.json();
 
-    const pinIdParam = state.lastPinId
-      ? `&pinId=${encodeURIComponent(state.lastPinId)}`
-      : "";
-    const imagesRes = await fetch(
-      `/api/images?q=${encodeURIComponent(sceneData.imageQuery)}${pinIdParam}&orientation=${orientation}`
+    // Fetch top 1 photo per query in parallel
+    const imageResults = await Promise.all(
+      sceneData.imageQueries.map(async (q) => {
+        try {
+          const res = await fetch(`/api/images?q=${encodeURIComponent(q)}&orientation=${orientation}`);
+          if (!res.ok) return null;
+          return res.json() as Promise<ImageResult>;
+        } catch {
+          return null;
+        }
+      })
     );
-    if (!imagesRes.ok) return null;
-    const imagesData: ImageResult[] = await imagesRes.json();
+    const imagesData = imageResults.filter((img): img is ImageResult => img !== null);
+    if (imagesData.length < 2) return null;
 
     // Preload all images before returning so they're cache-ready
     await preloadImages(imagesData.map((img) => img.url));
@@ -167,8 +173,9 @@ export default function QuizPage() {
       setState(newState);
 
       clearTimeout(loadingTimer);
-      // Refill queue with accurate updated state
-      prefetchQueue.current = [];
+      // Keep first in-progress prefetch (it's been running since choosing phase started —
+      // likely already done). Clear the rest and refill with accurate updated state.
+      prefetchQueue.current = prefetchQueue.current.slice(0, 1);
       fillQueue(newState);
 
       if (isQuizComplete(newState)) {

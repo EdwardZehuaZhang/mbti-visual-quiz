@@ -13,7 +13,7 @@ export interface PersonalityState {
 
 export interface SceneResponse {
   scene: string;
-  imageQuery: string;
+  imageQueries: string[];
   axis: string;
   intent: string;
 }

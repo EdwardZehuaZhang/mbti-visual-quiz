@@ -15,8 +15,11 @@ async function prefetchFirstRound() {
       body: JSON.stringify({ state }),
     });
     const sceneData: SceneResponse = await sceneRes.json();
-    const imagesRes = await fetch(`/api/images?q=${encodeURIComponent(sceneData.imageQuery)}`);
-    const imagesData: ImageResult[] = await imagesRes.json();
+    const imagesData = await Promise.all(
+      sceneData.imageQueries.map((q) =>
+        fetch(`/api/images?q=${encodeURIComponent(q)}`).then((r) => r.json() as Promise<ImageResult>)
+      )
+    );
     sessionStorage.setItem("prefetch-scene", JSON.stringify(sceneData));
     sessionStorage.setItem("prefetch-images", JSON.stringify(imagesData));
   } catch {}
