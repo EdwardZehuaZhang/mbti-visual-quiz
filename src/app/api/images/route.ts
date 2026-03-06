@@ -58,13 +58,13 @@ async function fetchPexels(query: string, key: string, orientation: string): Pro
   const data = await res.json();
   const photos = (data.photos || []) as Array<{
     id: number;
-    src: { original: string; large2x: string; large: string };
+    src: { original: string; large2x: string; large: string; portrait: string; landscape: string };
     alt: string;
   }>;
   const topPool = photos.slice(0, 15);
   return shuffle(topPool).slice(0, 8).map((photo) => ({
     id: `pexels-${photo.id}`,
-    url: photo.src.original || photo.src.large2x || photo.src.large,
+    url: (pexelsOrientation === "portrait" ? photo.src.portrait : photo.src.landscape) || photo.src.large2x || photo.src.large,
     description: photo.alt || query,
     alt: photo.alt || query,
   }));
