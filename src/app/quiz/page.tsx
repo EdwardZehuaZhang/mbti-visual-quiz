@@ -163,8 +163,8 @@ export default function QuizPage() {
     setPhase("interpreting");
     setDisplayTurn((t) => t + 1);
 
-    // After a brief visual moment, switch to loading screen
-    const loadingTimer = setTimeout(() => setPhase("loading"), 450);
+    // On the last round, skip the loading spinner — user will navigate to results
+    const loadingTimer = state.turn < 10 ? setTimeout(() => setPhase("loading"), 450) : null;
     const orientation = getOrientation();
 
     // Fire next scene fetch immediately — runs in parallel with interpret
@@ -198,7 +198,7 @@ export default function QuizPage() {
         ],
       };
       setState(newState);
-      clearTimeout(loadingTimer);
+      if (loadingTimer) clearTimeout(loadingTimer);
 
       if (isQuizComplete(newState)) {
         sessionStorage.setItem("mbti-state", JSON.stringify(newState));
@@ -223,7 +223,7 @@ export default function QuizPage() {
       fillQueue(newState);
       loadRound(newState);
     } catch (err) {
-      clearTimeout(loadingTimer);
+      if (loadingTimer) clearTimeout(loadingTimer);
       console.error("interpret failed, retrying round", err);
       prefetchQueue.current = [];
       setPhase("choosing");
