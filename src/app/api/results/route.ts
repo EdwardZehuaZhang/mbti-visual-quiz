@@ -2,7 +2,17 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import type { PersonalityState } from "@/types/quiz";
 
-function getOpenAI(apiKey?: string) { return new OpenAI({ apiKey: apiKey || process.env.OPENAI_API_KEY }); }
+async function callWithFallback(apiKey: string | undefined, fn: (client: OpenAI) => Promise<unknown>) {
+  if (apiKey) {
+    try {
+      return await fn(new OpenAI({ apiKey }));
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      if (status !== 401 && status !== 403) throw err;
+    }
+  }
+  return fn(new OpenAI({ apiKey: process.env.OPENAI_API_KEY }));
+}
 
 const SYSTEM_PROMPT = `You are a personality psychologist writing the final results of an MBTI visual personality assessment. You have access to the full history of a person's image choices and the personality signals derived from them.
 
@@ -34,7 +44,7 @@ Respond with valid JSON only, no markdown:
 }`;
 
 async function generateResults(model: string, userMessage: string, apiKey?: string) {
-  const completion = await getOpenAI(apiKey).chat.completions.create({
+  const completion = await callWithFallback(apiKey, (client) => client.chat.completions.create({
     model,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
@@ -42,7 +52,7 @@ async function generateResults(model: string, userMessage: string, apiKey?: stri
     ],
     temperature: 0.8,
     max_tokens: 800,
-  });
+  })) as OpenAI.Chat.Completions.ChatCompletion;
   const content = completion.choices[0].message.content || "";
   const cleaned = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   return JSON.parse(cleaned);

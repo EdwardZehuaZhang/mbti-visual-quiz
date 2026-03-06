@@ -2,7 +2,17 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import type { PersonalityState, InterpretResponse } from "@/types/quiz";
 
-function getOpenAI(apiKey?: string) { return new OpenAI({ apiKey: apiKey || process.env.OPENAI_API_KEY }); }
+async function callWithFallback(apiKey: string | undefined, fn: (client: OpenAI) => Promise<unknown>) {
+  if (apiKey) {
+    try {
+      return await fn(new OpenAI({ apiKey }));
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      if (status !== 401 && status !== 403) throw err;
+    }
+  }
+  return fn(new OpenAI({ apiKey: process.env.OPENAI_API_KEY }));
+}
 
 const SYSTEM_PROMPT = `You are a personality psychologist interpreting image choices in an MBTI personality assessment. You analyze what a person's visual preference reveals about their personality.
 
@@ -52,7 +62,7 @@ Current personality state:
 
 Interpret this choice and return updated signals and confidence values. Remember to adjust incrementally from the current values.`;
 
-    const completion = await getOpenAI(apiKey).chat.completions.create({
+    const completion = await callWithFallback(apiKey, (client) => client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
@@ -60,7 +70,7 @@ Interpret this choice and return updated signals and confidence values. Remember
       ],
       temperature: 0.7,
       max_tokens: 300,
-    });
+    })) as OpenAI.Chat.Completions.ChatCompletion;
 
     const content = completion.choices[0].message.content || "";
     const parsed = JSON.parse(content);
