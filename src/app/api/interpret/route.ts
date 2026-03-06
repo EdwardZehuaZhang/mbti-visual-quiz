@@ -47,18 +47,18 @@ Current personality state:
 - Signals: EI=${state.signals.EI.toFixed(3)}, SN=${state.signals.SN.toFixed(3)}, TF=${state.signals.TF.toFixed(3)}, JP=${state.signals.JP.toFixed(3)}
 - Confidence: EI=${state.confidence.EI.toFixed(3)}, SN=${state.confidence.SN.toFixed(3)}, TF=${state.confidence.TF.toFixed(3)}, JP=${state.confidence.JP.toFixed(3)}
 - Turn: ${state.turn + 1}
-- Previous interpretations: ${state.choices.map((c) => c.interpretation).join(" | ") || "None yet"}
+- Previous interpretations: ${state.choices.slice(-3).map((c) => c.interpretation).join(" | ") || "None yet"}
 
 Interpret this choice and return updated signals and confidence values. Remember to adjust incrementally from the current values.`;
 
     const completion = await getOpenAI().chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userMessage },
       ],
       temperature: 0.7,
-      max_tokens: 400,
+      max_tokens: 300,
     });
 
     const content = completion.choices[0].message.content || "";

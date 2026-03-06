@@ -41,18 +41,18 @@ export async function POST(request: Request) {
 - Confidence: EI=${state.confidence.EI.toFixed(2)}, SN=${state.confidence.SN.toFixed(2)}, TF=${state.confidence.TF.toFixed(2)}, JP=${state.confidence.JP.toFixed(2)}
 - Turn: ${state.turn + 1} of 15
 - Lowest confidence axis: ${lowestConfidenceAxis}
-- Previous choices: ${state.choices.length > 0 ? state.choices.map((c) => c.interpretation).join("; ") : "None yet"}
+- Previous choices: ${state.choices.length > 0 ? state.choices.slice(-3).map((c) => c.interpretation).join("; ") : "None yet"}
 
 Generate a new scene that primarily targets the ${lowestConfidenceAxis} axis (but can touch others). Make it different from any previous scenes. Prioritize probing the axis where confidence is lowest.`;
 
     const completion = await getOpenAI().chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userMessage },
       ],
       temperature: 0.9,
-      max_tokens: 300,
+      max_tokens: 200,
     });
 
     const content = completion.choices[0].message.content || "";

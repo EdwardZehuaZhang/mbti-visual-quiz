@@ -41,8 +41,8 @@ export default function QuizPage() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [roundKey, setRoundKey] = useState(0);
 
-  // Holds prefetched next round data
-  const prefetchRef = useRef<Promise<{ scene: SceneResponse; images: ImageResult[] } | null> | null>(null);
+  // Queue of prefetched rounds (up to 3 ahead)
+  const prefetchQueue = useRef<Promise<{ scene: SceneResponse; images: ImageResult[] } | null>[]>([]);
 
   const showRound = useCallback((sceneData: SceneResponse, imagesData: ImageResult[]) => {
     setScene(sceneData);
@@ -55,17 +55,17 @@ export default function QuizPage() {
     setPhase("loading");
     setSelectedId(null);
 
-    // Check for prefetched data first
-    if (prefetchRef.current) {
-      const prefetched = await prefetchRef.current;
-      prefetchRef.current = null;
+    // Use prefetched data if available
+    if (prefetchQueue.current.length > 0) {
+      const next = prefetchQueue.current.shift()!;
+      const prefetched = await next;
       if (prefetched) {
         showRound(prefetched.scene, prefetched.images);
         return;
       }
     }
 
-    // No prefetch available — fetch now
+    // No prefetch available 鈥?fetch now
     try {
       const pinIdParam = currentState.lastPinId
         ? `&pinId=${encodeURIComponent(currentState.lastPinId)}`
@@ -121,8 +121,10 @@ export default function QuizPage() {
         }),
       });
 
-      // Start prefetching next scene immediately using current state (approximate but fast)
-      prefetchRef.current = prefetchNextRound(state);
+      // Start prefetching next rounds immediately
+      if (prefetchQueue.current.length < 3) {
+        prefetchQueue.current.push(prefetchNextRound(state));
+      }
 
       const res = await interpretPromise;
       if (!res.ok) throw new Error(`interpret ${res.status}`);
@@ -140,8 +142,10 @@ export default function QuizPage() {
       };
       setState(newState);
 
-      // Replace prefetch with one based on actual updated state for better accuracy
-      prefetchRef.current = prefetchNextRound(newState);
+      // Fill queue up to 3 ahead using updated state
+      while (prefetchQueue.current.length < 3) {
+        prefetchQueue.current.push(prefetchNextRound(newState));
+      }
 
       if (isQuizComplete(newState)) {
         sessionStorage.setItem("mbti-state", JSON.stringify(newState));
@@ -152,7 +156,7 @@ export default function QuizPage() {
       }
     } catch (err) {
       console.error("interpret failed, retrying round", err);
-      prefetchRef.current = null;
+      prefetchQueue.current = [];
       setPhase("choosing");
       setSelectedId(null);
     }
