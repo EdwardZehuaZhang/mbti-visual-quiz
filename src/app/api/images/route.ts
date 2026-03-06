@@ -40,7 +40,7 @@ async function fetchUnsplash(query: string, key: string, orientation: string): P
   if (!img) return null;
   return {
     id: img.id,
-    url: img.urls.regular || img.urls.full,
+    url: img.urls.full || img.urls.regular,
     description: img.description || img.alt_description || query,
     alt: img.alt_description || query,
   };
