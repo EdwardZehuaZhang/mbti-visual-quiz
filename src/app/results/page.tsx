@@ -139,7 +139,7 @@ export default function ResultsPage() {
           <TraitBar
             key={axis}
             axis={axis}
-            score={results.traitBreakdown[axis].score}
+            score={results.traitBreakdown?.[axis]?.score ?? 0}
             delay={0.8 + i * 0.15}
           />
         ))}
@@ -153,7 +153,7 @@ export default function ResultsPage() {
         className="mb-20"
       >
         <p className="text-foreground/70 font-light leading-relaxed text-lg">
-          {results.paragraph}
+          {results.paragraph ?? ""}
         </p>
       </motion.div>
 

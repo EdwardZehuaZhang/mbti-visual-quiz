@@ -26,12 +26,27 @@ Respond with valid JSON only, no markdown:
   "type": "XXXX",
   "paragraph": "Your personalized description...",
   "traitBreakdown": {
-    "EI": { "label": "Extraversion/Introversion", "score": number (-1 to 1) },
-    "SN": { "label": "Sensing/Intuition", "score": number (-1 to 1) },
-    "TF": { "label": "Thinking/Feeling", "score": number (-1 to 1) },
-    "JP": { "label": "Judging/Perceiving", "score": number (-1 to 1) }
+    "EI": { "label": "Extraversion/Introversion", "score": 0 },
+    "SN": { "label": "Sensing/Intuition", "score": 0 },
+    "TF": { "label": "Thinking/Feeling", "score": 0 },
+    "JP": { "label": "Judging/Perceiving", "score": 0 }
   }
 }`;
+
+async function generateResults(model: string, userMessage: string) {
+  const completion = await getOpenAI().chat.completions.create({
+    model,
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userMessage },
+    ],
+    temperature: 0.8,
+    max_tokens: 800,
+  });
+  const content = completion.choices[0].message.content || "";
+  const cleaned = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  return JSON.parse(cleaned);
+}
 
 export async function POST(request: Request) {
   try {
@@ -55,21 +70,20 @@ ${choicesSummary}
 
 Based on all of this data, determine the MBTI type, write a personalized paragraph that references their actual choices, and provide the trait breakdown.`;
 
-    const completion = await getOpenAI().chat.completions.create({
-      model: "gpt-5.4",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userMessage },
-      ],
-      temperature: 0.8,
-      max_tokens: 800,
-    });
+    // Try models in order of preference
+    const models = ["gpt-5.4", "gpt-4.5-preview", "gpt-4o"];
+    let lastError: unknown;
+    for (const model of models) {
+      try {
+        const results = await generateResults(model, userMessage);
+        return NextResponse.json(results);
+      } catch (err) {
+        console.error(`Results error with ${model}:`, err);
+        lastError = err;
+      }
+    }
 
-    const content = completion.choices[0].message.content || "";
-    const cleaned = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-    const results = JSON.parse(cleaned);
-
-    return NextResponse.json(results);
+    throw lastError;
   } catch (error) {
     console.error("Results error:", error);
     return NextResponse.json(
