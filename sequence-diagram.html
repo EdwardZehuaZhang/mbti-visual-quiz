@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Personality Quiz — Sequence Diagram</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f0f14;
+    color: #e0e0ec;
+    padding: 40px 30px 60px;
+  }
+
+  h1 { text-align: center; font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .subtitle { text-align: center; font-size: 12px; color: #666; margin-bottom: 8px; }
+  .tag { text-align: center; font-size: 11px; color: #444; margin-bottom: 44px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  /* ── Sequence diagram wrapper ── */
+  .seq {
+    position: relative;
+    max-width: 1060px;
+    margin: 0 auto;
+  }
+
+  /* ── Participant headers ── */
+  .participants {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    margin-bottom: 0;
+  }
+  .participant {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 120px;
+    flex-shrink: 0;
+  }
+  .participant-box {
+    border-radius: 8px;
+    padding: 8px 10px;
+    text-align: center;
+    width: 110px;
+    position: relative;
+    z-index: 2;
+  }
+  .participant-name { font-size: 11.5px; font-weight: 700; line-height: 1.4; }
+  .participant-sub  { font-size: 10px; opacity: 0.6; margin-top: 2px; line-height: 1.3; }
+
+  /* ── Lifelines ── */
+  .lifelines {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    pointer-events: none;
+  }
+
+  /* ── Messages area ── */
+  .messages {
+    position: relative;
+    padding-top: 20px;
+  }
+
+  /* ── Group / loop boxes ── */
+  .group-box {
+    border-radius: 8px;
+    margin: 4px 0;
+    position: relative;
+  }
+  .group-label {
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 10px 2px;
+    border-radius: 6px 6px 0 0;
+    display: inline-block;
+  }
+  .group-inner { padding: 4px 0 8px; }
+
+  /* ── Section headings ── */
+  .section-head {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #444;
+    padding: 16px 0 6px 8px;
+  }
+
+  /* ── Arrow rows ── */
+  .arrow-row {
+    display: flex;
+    align-items: center;
+    position: relative;
+    min-height: 36px;
+    margin: 0;
+  }
+
+  /* Activation box on a lifeline */
+  .act {
+    position: absolute;
+    width: 10px;
+    border-radius: 3px;
+    top: 0; bottom: 0;
+    transform: translateX(-50%);
+    z-index: 1;
+  }
+
+  /* Arrow SVG drawn by JS; we use CSS flex for label alignment */
+  .arrow-label {
+    position: absolute;
+    white-space: nowrap;
+    font-size: 11px;
+    pointer-events: none;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .arrow-note {
+    font-size: 10px;
+    color: #666;
+    font-style: italic;
+  }
+
+  /* Spacer */
+  .spacer { height: 12px; }
+  .spacer-sm { height: 6px; }
+
+  /* ── Pretty SVG diagram (main) ── */
+  svg.seqsvg {
+    width: 100%;
+    overflow: visible;
+  }
+</style>
+</head>
+<body>
+
+<h1>Personality Quiz — Sequence Diagram</h1>
+<div class="subtitle">Assignment 2 · ID2116 Computing for Design</div>
+<div class="tag">MVC Architecture · Next.js · OpenAI API · Image APIs</div>
+
+<div class="seq">
+
+<!-- We render everything as an inline SVG for precise control -->
+<svg class="seqsvg" id="diagram" viewBox="0 0 1040 1080" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <!-- Arrow markers -->
+  <marker id="arr-solid" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#7b8fff"/>
+  </marker>
+  <marker id="arr-return" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#4ade80"/>
+  </marker>
+  <marker id="arr-openai" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#c084fc"/>
+  </marker>
+  <marker id="arr-openai-r" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#9a6fd8"/>
+  </marker>
+  <marker id="arr-img" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#38bdf8"/>
+  </marker>
+  <marker id="arr-img-r" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#1e8cb8"/>
+  </marker>
+  <marker id="arr-model" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#fbbf24"/>
+  </marker>
+</defs>
+
+<!-- ════════════════════════════════════════════════════════════
+     PARTICIPANT COLUMNS  (x positions = centres of lifelines)
+     User=80  View=240  Controller=440  Model=610  OpenAI=790  ImageAPIs=970
+     ════════════════════════════════════════════════════════════ -->
+
+<!-- Participant boxes -->
+<!-- User -->
+<rect x="30" y="10" width="100" height="54" rx="8" fill="#1a1a2e" stroke="#3a3a6a" stroke-width="1.5"/>
+<text x="80" y="32" text-anchor="middle" fill="#7b8fff" font-size="12" font-weight="700">👤 User</text>
+<text x="80" y="48" text-anchor="middle" fill="#7b8fff" font-size="9.5" opacity="0.6">Browser</text>
+<text x="80" y="59" text-anchor="middle" fill="#7b8fff" font-size="9.5" opacity="0.6">«actor»</text>
+
+<!-- View -->
+<rect x="185" y="10" width="110" height="54" rx="8" fill="#0d1f1a" stroke="#2a5a3a" stroke-width="1.5"/>
+<text x="240" y="30" text-anchor="middle" fill="#4ade80" font-size="11.5" font-weight="700">📱 View</text>
+<text x="240" y="44" text-anchor="middle" fill="#4ade80" font-size="9.5" opacity="0.6">Quiz UI · /quiz</text>
+<text x="240" y="57" text-anchor="middle" fill="#4ade80" font-size="9.5" opacity="0.6">React Components</text>
+
+<!-- Controller -->
+<rect x="380" y="10" width="120" height="54" rx="8" fill="#1a1200" stroke="#3a2e00" stroke-width="1.5"/>
+<text x="440" y="30" text-anchor="middle" fill="#fbbf24" font-size="11.5" font-weight="700">⚡ Controller</text>
+<text x="440" y="44" text-anchor="middle" fill="#fbbf24" font-size="9.5" opacity="0.6">API Routes</text>
+<text x="440" y="57" text-anchor="middle" fill="#fbbf24" font-size="9.5" opacity="0.6">/api/* serverless</text>
+
+<!-- Model -->
+<rect x="555" y="10" width="110" height="54" rx="8" fill="#1a0a00" stroke="#4a2a00" stroke-width="1.5"/>
+<text x="610" y="30" text-anchor="middle" fill="#fb923c" font-size="11.5" font-weight="700">📦 Model</text>
+<text x="610" y="44" text-anchor="middle" fill="#fb923c" font-size="9.5" opacity="0.6">PersonalityState</text>
+<text x="610" y="57" text-anchor="middle" fill="#fb923c" font-size="9.5" opacity="0.6">client memory</text>
+
+<!-- OpenAI -->
+<rect x="740" y="10" width="110" height="54" rx="8" fill="#1a0f2e" stroke="#3a1f5a" stroke-width="1.5"/>
+<text x="795" y="30" text-anchor="middle" fill="#c084fc" font-size="11.5" font-weight="700">🧠 OpenAI</text>
+<text x="795" y="44" text-anchor="middle" fill="#c084fc" font-size="9.5" opacity="0.6">GPT-4o-mini</text>
+<text x="795" y="57" text-anchor="middle" fill="#c084fc" font-size="9.5" opacity="0.6">gpt-4.5 / gpt-4o</text>
+
+<!-- Image APIs -->
+<rect x="915" y="10" width="115" height="54" rx="8" fill="#0f1a2e" stroke="#1a2f5a" stroke-width="1.5"/>
+<text x="972" y="30" text-anchor="middle" fill="#38bdf8" font-size="11.5" font-weight="700">🖼 Image APIs</text>
+<text x="972" y="44" text-anchor="middle" fill="#38bdf8" font-size="9.5" opacity="0.6">Pinterest/Pexels</text>
+<text x="972" y="57" text-anchor="middle" fill="#38bdf8" font-size="9.5" opacity="0.6">Unsplash/Picsum</text>
+
+<!-- ════ LIFELINES ════ -->
+<line x1="80"  y1="64" x2="80"  y2="1070" stroke="#3a3a6a" stroke-width="1.5" stroke-dasharray="6,4"/>
+<line x1="240" y1="64" x2="240" y2="1070" stroke="#2a5a3a" stroke-width="1.5" stroke-dasharray="6,4"/>
+<line x1="440" y1="64" x2="440" y2="1070" stroke="#3a2e00" stroke-width="1.5" stroke-dasharray="6,4"/>
+<line x1="610" y1="64" x2="610" y2="1070" stroke="#4a2a00" stroke-width="1.5" stroke-dasharray="6,4"/>
+<line x1="795" y1="64" x2="795" y2="1070" stroke="#3a1f5a" stroke-width="1.5" stroke-dasharray="6,4"/>
+<line x1="972" y1="64" x2="972" y2="1070" stroke="#1a2f5a" stroke-width="1.5" stroke-dasharray="6,4"/>
+
+<!-- ════════════════════════════════════════════════════════════
+     SECTION 1: INITIALISATION
+     ════════════════════════════════════════════════════════════ -->
+<rect x="0" y="78" width="1040" height="18" rx="0" fill="none"/>
+<text x="8" y="91" fill="#444" font-size="10" font-weight="700" letter-spacing="2" text-transform="uppercase">INITIALISATION</text>
+
+<!-- 1. User → View: navigate to /quiz -->
+<line x1="84" y1="108" x2="236" y2="108" stroke="#7b8fff" stroke-width="1.5" marker-end="url(#arr-solid)"/>
+<text x="158" y="104" text-anchor="middle" fill="#9090cc" font-size="10.5">navigate to /quiz</text>
+
+<!-- 2. View → Model: createInitialState() -->
+<line x1="244" y1="124" x2="606" y2="124" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-model)"/>
+<text x="420" y="120" text-anchor="middle" fill="#c0843c" font-size="10.5">createInitialState() → signals={0,0,0,0}, confidence={0,0,0,0}</text>
+
+<!-- 3. Model → View: state -->
+<line x1="606" y1="138" x2="244" y2="138" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr-model)" opacity="0.5"/>
+<text x="420" y="134" text-anchor="middle" fill="#9a6020" font-size="10" font-style="italic">PersonalityState initialised</text>
+
+<!-- separator -->
+<line x1="0" y1="150" x2="1040" y2="150" stroke="#1a1a2a" stroke-width="1"/>
+
+<!-- ════════════════════════════════════════════════════════════
+     LOOP: repeat up to 11 rounds
+     ════════════════════════════════════════════════════════════ -->
+<rect x="4" y="155" width="1032" height="760" rx="6" fill="none" stroke="#2a2a4a" stroke-width="1.5" stroke-dasharray="8,4"/>
+<rect x="4" y="155" width="130" height="18" rx="4" fill="#1a1a2e"/>
+<text x="12" y="167" fill="#7b8fff" font-size="9.5" font-weight="800" letter-spacing="1.5">LOOP</text>
+<text x="48" y="167" fill="#7b8fff" font-size="9.5"> repeat while turn &lt; 11 and any confidence &lt; 0.75</text>
+
+<!-- ════ ROUND: SCENE GENERATION ════ -->
+<text x="16" y="188" fill="#3a3a6a" font-size="9.5" font-weight="700" letter-spacing="1.5">── SCENE GENERATION ───────────────────────────────────</text>
+
+<!-- 4. View → Controller: POST /api/scene { state } -->
+<rect x="234" y="192" width="12" height="120" rx="2" fill="#1a3a2a" opacity="0.8"/>
+<rect x="434" y="192" width="12" height="120" rx="2" fill="#2a2a00" opacity="0.8"/>
+<line x1="246" y1="206" x2="434" y2="206" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arr-solid)"/>
+<rect x="300" y="197" width="140" height="14" rx="3" fill="#1a1200"/>
+<text x="370" y="207" text-anchor="middle" fill="#fbbf24" font-size="10.5" font-weight="600">POST /api/scene</text>
+<text x="300" y="220" fill="#9a9060" font-size="9.5" font-style="italic">  { PersonalityState, turn, lowestConfidenceAxis }</text>
+
+<!-- 5. Controller → OpenAI: chat.completions.create -->
+<rect x="434" y="222" width="12" height="60" rx="2" fill="#2a1a3a" opacity="0.7"/>
+<rect x="789" y="222" width="12" height="60" rx="2" fill="#2a1a3a" opacity="0.7"/>
+<line x1="446" y1="236" x2="789" y2="236" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arr-openai)"/>
+<rect x="570" y="226" width="175" height="14" rx="3" fill="#180f28"/>
+<text x="658" y="237" text-anchor="middle" fill="#c084fc" font-size="10.5">gpt-4o-mini · chat.completions</text>
+<text x="520" y="251" fill="#7050a0" font-size="9" font-style="italic">  system: psychologist role, axis targeting rules</text>
+<text x="520" y="262" fill="#7050a0" font-size="9" font-style="italic">  user: signals, confidence, turn, lowest axis</text>
+
+<!-- 6. OpenAI → Controller: JSON response -->
+<line x1="789" y1="276" x2="446" y2="276" stroke="#9a6fd8" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-openai-r)"/>
+<rect x="548" y="267" width="220" height="14" rx="3" fill="#180f28"/>
+<text x="658" y="277" text-anchor="middle" fill="#9a6fd8" font-size="10.5">{ scene, imageQuery, axis, intent }</text>
+
+<!-- 7. Controller → View: scene data -->
+<line x1="434" y1="300" x2="246" y2="300" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-return)"/>
+<rect x="285" y="291" width="150" height="14" rx="3" fill="#0a1a0a"/>
+<text x="360" y="301" text-anchor="middle" fill="#4ade80" font-size="10.5">SceneResponse returned</text>
+
+<!-- separator -->
+<line x1="10" y1="320" x2="1030" y2="320" stroke="#1a1a2a" stroke-width="0.8" stroke-dasharray="3,6"/>
+
+<!-- ════ ROUND: IMAGE FETCH ════ -->
+<text x="16" y="334" fill="#3a3a6a" font-size="9.5" font-weight="700" letter-spacing="1.5">── IMAGE FETCH ─────────────────────────────────────────</text>
+
+<!-- 8. View → Controller: GET /api/images?q= -->
+<rect x="234" y="338" width="12" height="80" rx="2" fill="#1a3a2a" opacity="0.8"/>
+<rect x="434" y="338" width="12" height="80" rx="2" fill="#2a2a00" opacity="0.8"/>
+<line x1="246" y1="352" x2="434" y2="352" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arr-solid)"/>
+<rect x="286" y="342" width="160" height="14" rx="3" fill="#1a1200"/>
+<text x="366" y="353" text-anchor="middle" fill="#fbbf24" font-size="10.5">GET /api/images?q=imageQuery</text>
+
+<!-- 9. Controller → Image APIs: search -->
+<rect x="434" y="358" width="12" height="46" rx="2" fill="#0f2a3a" opacity="0.7"/>
+<rect x="966" y="358" width="12" height="46" rx="2" fill="#0f2a3a" opacity="0.7"/>
+<line x1="446" y1="368" x2="966" y2="368" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#arr-img)"/>
+<text x="706" y="364" text-anchor="middle" fill="#38bdf8" font-size="10.5">search(imageQuery) — Pinterest → Pexels → Unsplash → Picsum</text>
+
+<!-- 10. Image APIs → Controller: 4 shuffled images -->
+<line x1="966" y1="384" x2="446" y2="384" stroke="#1e8cb8" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-img-r)"/>
+<text x="706" y="380" text-anchor="middle" fill="#1e8cb8" font-size="10.5">ImageResult[4] — url, description, alt</text>
+
+<!-- 11. Controller → View: images -->
+<line x1="434" y1="402" x2="246" y2="402" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-return)"/>
+<text x="340" y="398" text-anchor="middle" fill="#4ade80" font-size="10.5">ImageResult[4] returned</text>
+
+<!-- separator -->
+<line x1="10" y1="420" x2="1030" y2="420" stroke="#1a1a2a" stroke-width="0.8" stroke-dasharray="3,6"/>
+
+<!-- ════ ROUND: USER INTERACTION ════ -->
+<text x="16" y="434" fill="#3a3a6a" font-size="9.5" font-weight="700" letter-spacing="1.5">── USER INTERACTION ────────────────────────────────────</text>
+
+<!-- 12. View → User: render 4 images + scene prompt -->
+<line x1="234" y1="448" x2="84" y2="448" stroke="#4ade80" stroke-width="1.5" marker-end="url(#arr-return)"/>
+<text x="158" y="444" text-anchor="middle" fill="#4ade80" font-size="10.5">render scene + 4 images</text>
+
+<!-- 13. User → View: click image -->
+<line x1="84" y1="468" x2="234" y2="468" stroke="#7b8fff" stroke-width="1.5" marker-end="url(#arr-solid)"/>
+<text x="158" y="464" text-anchor="middle" fill="#9090cc" font-size="10.5">click image (chosenImage)</text>
+<text x="90" y="482" fill="#666" font-size="9" font-style="italic">  captures: description, alt, url, pinId</text>
+
+<!-- separator -->
+<line x1="10" y1="492" x2="1030" y2="492" stroke="#1a1a2a" stroke-width="0.8" stroke-dasharray="3,6"/>
+
+<!-- ════ ROUND: INTERPRETATION ════ -->
+<text x="16" y="506" fill="#3a3a6a" font-size="9.5" font-weight="700" letter-spacing="1.5">── INTERPRET CHOICE ────────────────────────────────────</text>
+
+<!-- 14. View → Controller: POST /api/interpret -->
+<rect x="234" y="510" width="12" height="120" rx="2" fill="#1a3a2a" opacity="0.8"/>
+<rect x="434" y="510" width="12" height="120" rx="2" fill="#2a2a00" opacity="0.8"/>
+<line x1="246" y1="524" x2="434" y2="524" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arr-solid)"/>
+<rect x="275" y="514" width="165" height="14" rx="3" fill="#1a1200"/>
+<text x="358" y="525" text-anchor="middle" fill="#fbbf24" font-size="10.5">POST /api/interpret</text>
+<text x="248" y="539" fill="#9a9060" font-size="9" font-style="italic">  { state, scene, chosenImage: {description, alt} }</text>
+
+<!-- 15. Controller → OpenAI: interpret -->
+<rect x="434" y="546" width="12" height="60" rx="2" fill="#2a1a3a" opacity="0.7"/>
+<rect x="789" y="546" width="12" height="60" rx="2" fill="#2a1a3a" opacity="0.7"/>
+<line x1="446" y1="560" x2="789" y2="560" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arr-openai)"/>
+<rect x="548" y="550" width="220" height="14" rx="3" fill="#180f28"/>
+<text x="658" y="561" text-anchor="middle" fill="#c084fc" font-size="10.5">gpt-4o-mini · chat.completions</text>
+<text x="480" y="575" fill="#7050a0" font-size="9" font-style="italic">  system: psychologist role + incremental signal rules</text>
+<text x="480" y="586" fill="#7050a0" font-size="9" font-style="italic">  user: scene, chosenImage, all signals/confidence, turn, last 3 interpretations</text>
+
+<!-- 16. OpenAI → Controller: updated signals -->
+<line x1="789" y1="600" x2="446" y2="600" stroke="#9a6fd8" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-openai-r)"/>
+<rect x="500" y="590" width="270" height="14" rx="3" fill="#180f28"/>
+<text x="635" y="601" text-anchor="middle" fill="#9a6fd8" font-size="10.5">{ signals{EI,SN,TF,JP}, confidence{…}, interpretation }</text>
+
+<!-- 17. Controller → Model: update state -->
+<line x1="446" y1="618" x2="606" y2="618" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-model)"/>
+<text x="526" y="613" text-anchor="middle" fill="#c0843c" font-size="10.5">update PersonalityState</text>
+<text x="448" y="630" fill="#9a6020" font-size="9" font-style="italic">  append choice, update signals/confidence, turn++</text>
+
+<!-- 18. Controller → View: interpretation + updated state -->
+<line x1="434" y1="646" x2="246" y2="646" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-return)"/>
+<rect x="270" y="636" width="165" height="14" rx="3" fill="#0a1a0a"/>
+<text x="352" y="647" text-anchor="middle" fill="#4ade80" font-size="10.5">InterpretResponse returned</text>
+
+<!-- 19. View → User: show interpretation -->
+<line x1="234" y1="660" x2="84" y2="660" stroke="#4ade80" stroke-width="1.5" marker-end="url(#arr-return)"/>
+<text x="158" y="656" text-anchor="middle" fill="#4ade80" font-size="10.5">show interpretation text</text>
+
+<!-- ════ END LOOP note ════ -->
+<text x="16" y="690" fill="#5a5a8a" font-size="10" font-style="italic">  [loop ends when turn ≥ 11  OR  all confidence &gt; 0.75  →  isQuizComplete() = true]</text>
+
+<!-- end loop box bottom -->
+</rect><!-- This closes the loop rect visually -->
+
+<!-- separator -->
+<line x1="0" y1="714" x2="1040" y2="714" stroke="#1a1a2a" stroke-width="1"/>
+
+<!-- ════════════════════════════════════════════════════════════
+     SECTION 3: FINAL RESULTS
+     ════════════════════════════════════════════════════════════ -->
+<text x="8" y="730" fill="#444" font-size="10" font-weight="700" letter-spacing="2">RESULTS GENERATION</text>
+
+<!-- 20. View → Controller: POST /api/results -->
+<rect x="234" y="734" width="12" height="120" rx="2" fill="#1a3a2a" opacity="0.8"/>
+<rect x="434" y="734" width="12" height="120" rx="2" fill="#2a2a00" opacity="0.8"/>
+<line x1="246" y1="752" x2="434" y2="752" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arr-solid)"/>
+<rect x="275" y="742" width="165" height="14" rx="3" fill="#1a1200"/>
+<text x="358" y="753" text-anchor="middle" fill="#fbbf24" font-size="10.5">POST /api/results</text>
+<text x="248" y="768" fill="#9a9060" font-size="9" font-style="italic">  { state: full PersonalityState with all choices }</text>
+
+<!-- 21. Controller → OpenAI: generate final results -->
+<rect x="434" y="775" width="12" height="60" rx="2" fill="#2a1a3a" opacity="0.7"/>
+<rect x="789" y="775" width="12" height="60" rx="2" fill="#2a1a3a" opacity="0.7"/>
+<line x1="446" y1="788" x2="789" y2="788" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arr-openai)"/>
+<rect x="548" y="778" width="220" height="14" rx="3" fill="#180f28"/>
+<text x="658" y="789" text-anchor="middle" fill="#c084fc" font-size="10.5">gpt-5.4 → gpt-4.5-preview → gpt-4o</text>
+<text x="480" y="803" fill="#7050a0" font-size="9" font-style="italic">  system: determine MBTI type, write rich personalised paragraph</text>
+<text x="480" y="814" fill="#7050a0" font-size="9" font-style="italic">  user: final signals, confidence, complete choice history</text>
+
+<!-- 22. OpenAI → Controller: MBTI results -->
+<line x1="789" y1="828" x2="446" y2="828" stroke="#9a6fd8" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-openai-r)"/>
+<rect x="490" y="818" width="280" height="14" rx="3" fill="#180f28"/>
+<text x="630" y="829" text-anchor="middle" fill="#9a6fd8" font-size="10.5">{ type:"INFP", paragraph, traitBreakdown{EI,SN,TF,JP} }</text>
+
+<!-- 23. Controller → View: ResultsResponse -->
+<line x1="434" y1="846" x2="246" y2="846" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-return)"/>
+<rect x="272" y="836" width="165" height="14" rx="3" fill="#0a1a0a"/>
+<text x="354" y="847" text-anchor="middle" fill="#4ade80" font-size="10.5">ResultsResponse returned</text>
+
+<!-- 24. View → User: display MBTI results page -->
+<line x1="234" y1="868" x2="84" y2="868" stroke="#4ade80" stroke-width="1.5" marker-end="url(#arr-return)"/>
+<text x="158" y="864" text-anchor="middle" fill="#4ade80" font-size="10.5">navigate to /results</text>
+
+<!-- 25. User reads results -->
+<rect x="30" y="876" width="100" height="32" rx="6" fill="#1a1a2e" stroke="#3a3a6a" stroke-width="1.5"/>
+<text x="80" y="890" text-anchor="middle" fill="#7b8fff" font-size="10.5" font-weight="700">MBTI Type</text>
+<text x="80" y="903" text-anchor="middle" fill="#7b8fff" font-size="10">+ description</text>
+
+<!-- ════════════════════════════════════════════════════════════
+     MVC BRACKET ANNOTATION (right side)
+     ════════════════════════════════════════════════════════════ -->
+<line x1="1035" y1="10" x2="1035" y2="64" stroke="#333" stroke-width="1"/>
+
+<!-- MVC labels -->
+<rect x="1020" y="425" width="16" height="260" rx="3" fill="#1a1a2e" stroke="#3a3a6a" stroke-width="1"/>
+<text x="1028" y="560" text-anchor="middle" fill="#7b8fff" font-size="10" font-weight="700" transform="rotate(-90 1028 560)">VIEW · React Components · /quiz · /results</text>
+
+<rect x="1020" y="192" width="16" height="520" rx="3" fill="#1a1200" stroke="#3a2e00" stroke-width="1"/>
+<text x="1028" y="458" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="700" transform="rotate(-90 1028 458)">CONTROLLER · Next.js API Routes · Serverless Functions</text>
+
+<rect x="1020" y="124" width="16" height="586" rx="3" fill="#1a0a00" stroke="#4a2a00" stroke-width="1" opacity="0.6"/>
+<text x="1028" y="420" text-anchor="middle" fill="#fb923c" font-size="10" font-weight="700" transform="rotate(-90 1028 420)">MODEL · PersonalityState (client-side, no DB)</text>
+
+<!-- ════ LEGEND ════ -->
+<rect x="4" y="930" width="1032" height="140" rx="8" fill="#111118" stroke="#1e1e30" stroke-width="1"/>
+<text x="20" y="948" fill="#555" font-size="9.5" font-weight="700" letter-spacing="1.5">LEGEND</text>
+
+<!-- Solid arrow = request -->
+<line x1="20" y1="965" x2="80" y2="965" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arr-solid)"/>
+<text x="88" y="969" fill="#888" font-size="10">→ synchronous request / call</text>
+
+<!-- Dashed arrow = response -->
+<line x1="20" y1="982" x2="80" y2="982" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-return)"/>
+<text x="88" y="986" fill="#888" font-size="10">⤶ response / return value</text>
+
+<!-- Activation box legend -->
+<rect x="22" y="994" width="10" height="18" rx="2" fill="#1a3a2a"/>
+<text x="40" y="1006" fill="#888" font-size="10">activation box (component is active)</text>
+
+<!-- Model note -->
+<text x="20" y="1028" fill="#fb923c" font-size="10">📦 Model (PersonalityState) is held in browser memory only — no server-side database. It is passed as JSON in each API request body.</text>
+<text x="20" y="1044" fill="#888" font-size="10">🔄 The loop runs up to 11 turns. Early exit when all 4 MBTI axis confidence scores exceed 0.75 (isQuizComplete() = true).</text>
+<text x="20" y="1060" fill="#888" font-size="10">🧠 OpenAI model escalation for /api/results: tries gpt-5.4 first, falls back to gpt-4.5-preview, then gpt-4o if earlier models fail.</text>
+
+</svg>
+
+</div><!-- .seq -->
+
+<div style="text-align:center;margin-top:16px;font-size:11px;color:#333;">
+  Assignment 2 · Personality Quiz Sequence Diagram · ID2116 Computing for Design · EdwardZehuaZhang/mbti-visual-quiz
+</div>
+
+</body>
+</html>

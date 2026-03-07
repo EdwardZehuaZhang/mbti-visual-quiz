@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBTI Visual Quiz — Architecture Diagram</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f0f13;
+    color: #e8e8f0;
+    padding: 40px 20px;
+    min-height: 100vh;
+  }
+  h1 { text-align:center; font-size:24px; font-weight:700; letter-spacing:0.04em; color:#fff; margin-bottom:6px; }
+  .subtitle { text-align:center; font-size:13px; color:#888; margin-bottom:48px; letter-spacing:0.02em; }
+  .diagram { max-width:1100px; margin:0 auto; }
+  .section-label { font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#555; margin-bottom:12px; padding-left:4px; }
+  .flow-box { border-radius:14px; padding:24px; margin-bottom:20px; }
+  .flow-header { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .flow-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .flow-title { font-size:14px; font-weight:700; color:#fff; }
+  .flow-sub { font-size:11px; color:#666; margin-top:1px; }
+  .steps { display:flex; flex-wrap:wrap; gap:8px; }
+  .step { border-radius:8px; padding:10px 14px; font-size:12px; line-height:1.5; flex:1 1 200px; }
+  .step-num { font-weight:800; font-size:11px; letter-spacing:0.06em; margin-bottom:4px; opacity:0.7; }
+  .prompt-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px; }
+  .prompt-block { border-radius:8px; padding:14px; }
+  .prompt-label { font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px; }
+  .prompt-item { font-size:11.5px; color:#b0b0c0; line-height:1.55; margin-bottom:3px; padding-left:12px; position:relative; }
+  .prompt-item::before { content:'→'; position:absolute; left:0; color:#555; }
+  .tech-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .tech-pill { border-radius:6px; padding:5px 12px; font-size:11.5px; font-weight:600; border:1px solid; }
+  .endpoints { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+  .endpoint-row { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); }
+  .method-badge { font-size:10px; font-weight:800; padding:2px 8px; border-radius:4px; flex-shrink:0; letter-spacing:0.05em; margin-top:2px; }
+  .get-badge  { background:#0a3a1a; color:#4ade80; border:1px solid #1a5a2a; }
+  .post-badge { background:#1a2a3a; color:#60a5fa; border:1px solid #2a4a6a; }
+  .endpoint-path { font-family:'Cascadia Code','Fira Code',monospace; font-size:12px; color:#e8e8f0; font-weight:600; flex-shrink:0; width:130px; }
+  .endpoint-desc { font-size:12px; color:#888; line-height:1.5; flex:1; }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .divider { height:1px; background:linear-gradient(to right,transparent,#2a2a3a,transparent); margin:28px 0; }
+  .flow-node { border-radius:12px; padding:14px 24px; text-align:center; width:260px; }
+  .flow-node-title { font-size:13px; font-weight:700; color:#fff; margin-bottom:3px; }
+  .flow-node-sub { font-size:11px; color:#888; }
+  .flow-arrow { display:flex; flex-direction:column; align-items:center; height:44px; position:relative; }
+  .flow-arrow::before { content:''; position:absolute; width:2px; height:100%; background:#2a2a4a; }
+  .flow-arrow-label { background:#0f0f13; font-size:10.5px; color:#666; padding:2px 10px; border-radius:20px; border:1px solid #2a2a3a; z-index:1; margin-top:10px; white-space:nowrap; }
+  .arrow-down { width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-top:8px solid #3a3a5a; margin-top:-1px; }
+  .loop-note { background:#1a1a2e; border:1px dashed #3a3a6a; border-radius:8px; padding:8px 16px; font-size:11px; color:#7b8fff; text-align:center; margin:4px 0; }
+  .legend { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:40px; }
+  .legend-item { display:flex; align-items:center; gap:6px; font-size:11.5px; color:#888; }
+  .legend-dot { width:10px; height:10px; border-radius:3px; }
+</style>
+</head>
+<body>
+<div class="diagram">
+  <h1>MBTI Visual Quiz — Architecture</h1>
+  <div class="subtitle">Next.js · TypeScript · OpenAI API · Vercel · No Database</div>
+
+  <!-- TECH STACK -->
+  <div class="flow-box" style="background:#111118;border:1px solid #222230;">
+    <div class="flow-header">
+      <div class="flow-icon" style="background:#1a1a2e;">🛠</div>
+      <div><div class="flow-title">Tech Stack</div><div class="flow-sub">Core technologies and infrastructure</div></div>
+    </div>
+    <div class="two-col">
+      <div>
+        <div class="section-label">Frontend</div>
+        <div class="tech-row">
+          <span class="tech-pill" style="background:#0d1f1a;color:#4ade80;border-color:#1a3a2a;">Next.js 14 (App Router)</span>
+          <span class="tech-pill" style="background:#0d1f1a;color:#4ade80;border-color:#1a3a2a;">React + TypeScript</span>
+          <span class="tech-pill" style="background:#0d1f1a;color:#4ade80;border-color:#1a3a2a;">Tailwind CSS</span>
+        </div>
+        <div class="section-label" style="margin-top:14px;">State Management</div>
+        <div class="tech-row">
+          <span class="tech-pill" style="background:#1a1a00;color:#fbbf24;border-color:#3a3a00;">Client-side only (useState)</span>
+          <span class="tech-pill" style="background:#1a1a00;color:#fbbf24;border-color:#3a3a00;">No database</span>
+          <span class="tech-pill" style="background:#1a1a00;color:#fbbf24;border-color:#3a3a00;">Stateless API routes</span>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Deployment &amp; AI</div>
+        <div class="tech-row">
+          <span class="tech-pill" style="background:#1a0f00;color:#fb923c;border-color:#3a2000;">Vercel (Serverless)</span>
+          <span class="tech-pill" style="background:#1a0f2e;color:#c084fc;border-color:#3a1f5a;">OpenAI API</span>
+        </div>
+        <div class="section-label" style="margin-top:14px;">Image Sources (Priority Order)</div>
+        <div class="tech-row">
+          <span class="tech-pill" style="background:#1a0010;color:#f472b6;border-color:#3a0030;">1. Pinterest API</span>
+          <span class="tech-pill" style="background:#0f1a2e;color:#38bdf8;border-color:#1a2f5a;">2. Pexels API</span>
+          <span class="tech-pill" style="background:#0f1a0f;color:#86efac;border-color:#1a3a1a;">3. Unsplash API</span>
+          <span class="tech-pill" style="background:#1a1a1a;color:#888;border-color:#333;">4. Picsum (fallback)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- USER FLOW -->
+  <div class="flow-box" style="background:#111118;border:1px solid #222230;">
+    <div class="flow-header">
+      <div class="flow-icon" style="background:#1a1a2e;">🔄</div>
+      <div><div class="flow-title">User Flow &amp; API Sequence</div><div class="flow-sub">How a quiz session progresses end-to-end</div></div>
+    </div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:300px;">
+        <div class="steps">
+          <div class="step" style="background:#1a1a2e;border:1px solid #2a2a4a;flex:1 1 100%;">
+            <div class="step-num" style="color:#7b8fff;">STEP 1 — PAGE LOAD</div>
+            <div style="font-size:12.5px;color:#c0c0d8;line-height:1.6;">User visits <code style="color:#7b8fff;">/quiz</code>. React initialises <code style="color:#7b8fff;">PersonalityState</code> with all signals &amp; confidence = 0.</div>
+          </div>
+          <div class="step" style="background:#1a1200;border:1px solid #3a2e00;flex:1 1 100%;">
+            <div class="step-num" style="color:#fbbf24;">STEP 2 — SCENE GENERATION</div>
+            <div style="font-size:12.5px;color:#c0c0a8;line-height:1.6;"><code style="color:#fbbf24;">POST /api/scene</code><br>Sends current PersonalityState to GPT-4o-mini.<br>Returns: scene prompt, imageQuery keyword, target axis, intent.</div>
+          </div>
+          <div class="step" style="background:#0f1a2e;border:1px solid #1a2f5a;flex:1 1 100%;">
+            <div class="step-num" style="color:#38bdf8;">STEP 3 — IMAGE FETCH</div>
+            <div style="font-size:12.5px;color:#a0b8c8;line-height:1.6;"><code style="color:#38bdf8;">GET /api/images?q=&lt;imageQuery&gt;</code><br>Tries Pinterest → Pexels → Unsplash → Picsum.<br>Returns 4 shuffled images for the user to choose from.</div>
+          </div>
+          <div class="step" style="background:#1a1a2e;border:1px solid #2a2a4a;flex:1 1 100%;">
+            <div class="step-num" style="color:#7b8fff;">STEP 4 — USER CHOOSES</div>
+            <div style="font-size:12.5px;color:#c0c0d8;line-height:1.6;">User taps one of the 4 images. The chosen image's description &amp; alt text are captured.</div>
+          </div>
+          <div class="step" style="background:#1a0f2e;border:1px solid #3a1f5a;flex:1 1 100%;">
+            <div class="step-num" style="color:#c084fc;">STEP 5 — INTERPRET CHOICE</div>
+            <div style="font-size:12.5px;color:#c0a8d8;line-height:1.6;"><code style="color:#c084fc;">POST /api/interpret</code><br>Sends scene + chosen image + full state.<br>Returns updated signals, confidence, 1-2 sentence interpretation.</div>
+          </div>
+          <div class="step" style="background:#1a1a2e;border:1px solid #2a2a4a;flex:1 1 100%;">
+            <div class="step-num" style="color:#7b8fff;">STEP 6 — REPEAT OR FINISH</div>
+            <div style="font-size:12.5px;color:#c0c0d8;line-height:1.6;">Repeat steps 2–5 until: <strong>11 turns reached</strong> OR <strong>all 4 confidence scores &gt; 0.75</strong>.</div>
+          </div>
+          <div class="step" style="background:#1a0800;border:1px solid #4a2000;flex:1 1 100%;">
+            <div class="step-num" style="color:#fb923c;">STEP 7 — FINAL RESULTS</div>
+            <div style="font-size:12.5px;color:#c0a888;line-height:1.6;"><code style="color:#fb923c;">POST /api/results</code><br>Sends full choice history + signals.<br>Returns MBTI type, personalised paragraph, trait breakdown.</div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:0 0 200px;display:flex;flex-direction:column;align-items:center;gap:0;">
+        <div class="flow-node" style="width:180px;background:#1a1a2e;border:1px solid #3a3a6a;">
+          <div class="flow-node-title">👤 User</div>
+          <div class="flow-node-sub">Browser · /quiz</div>
+        </div>
+        <div class="flow-arrow"><div class="flow-arrow-label">PersonalityState</div><div class="arrow-down" style="margin-top:auto;"></div></div>
+        <div class="flow-node" style="width:180px;background:#0d1f1a;border:1px solid #2a5a3a;">
+          <div class="flow-node-title">⚡ Next.js API</div>
+          <div class="flow-node-sub">/api/scene</div>
+        </div>
+        <div class="flow-arrow"><div class="flow-arrow-label">scene + imageQuery</div><div class="arrow-down" style="margin-top:auto;"></div></div>
+        <div class="flow-node" style="width:180px;background:#0f1a2e;border:1px solid #2a4a7a;">
+          <div class="flow-node-title">🖼 Image APIs</div>
+          <div class="flow-node-sub">4 images returned</div>
+        </div>
+        <div class="flow-arrow"><div class="flow-arrow-label">user picks 1</div><div class="arrow-down" style="margin-top:auto;"></div></div>
+        <div class="flow-node" style="width:180px;background:#1a0f2e;border:1px solid #5a2a8a;">
+          <div class="flow-node-title">🧠 OpenAI</div>
+          <div class="flow-node-sub">/api/interpret</div>
+        </div>
+        <div class="flow-arrow"><div class="flow-arrow-label">updated state</div><div class="arrow-down" style="margin-top:auto;"></div></div>
+        <div class="loop-note" style="width:180px;">↩ repeat up to 11×</div>
+        <div class="flow-arrow" style="height:28px;"><div class="arrow-down" style="margin-top:auto;"></div></div>
+        <div class="flow-node" style="width:180px;background:#1a0800;border:1px solid #5a3a00;">
+          <div class="flow-node-title">🏆 Results</div>
+          <div class="flow-node-sub">MBTI type + paragraph</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPENAI PROMPTS -->
+  <div class="flow-box" style="background:#111118;border:1px solid #222230;">
+    <div class="flow-header">
+      <div class="flow-icon" style="background:#1a0f2e;">🧠</div>
+      <div><div class="flow-title">OpenAI API — Prompts &amp; Responses</div><div class="flow-sub">What is sent to the API and what comes back for each endpoint</div></div>
+    </div>
+
+    <!-- /api/scene -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:700;color:#fbbf24;margin-bottom:10px;">
+        <span style="font-family:monospace;font-size:12px;background:#1a1200;padding:2px 8px;border-radius:4px;border:1px solid #3a2e00;">POST /api/scene</span>
+        &nbsp;→&nbsp; Model: <code style="color:#c084fc;">gpt-4o-mini</code> · temp 0.9 · max_tokens 200
+      </div>
+      <div class="prompt-grid">
+        <div class="prompt-block" style="background:#1a1200;border:1px solid #2a2000;">
+          <div class="prompt-label" style="color:#fbbf24;">SYSTEM (psychologist role)</div>
+          <div class="prompt-item">Design visual MBTI quiz scenes</div>
+          <div class="prompt-item">Pick ONE specific subject (2-3 words)</div>
+          <div class="prompt-item">4 images = same subject, different versions</div>
+          <div class="prompt-item">Target axis: EI / SN / TF / JP</div>
+          <div class="prompt-item">Output JSON: scene, imageQuery, axis, intent</div>
+        </div>
+        <div class="prompt-block" style="background:#0d1a0d;border:1px solid #1a2e1a;">
+          <div class="prompt-label" style="color:#4ade80;">USER MESSAGE (per turn)</div>
+          <div class="prompt-item">Current EI/SN/TF/JP signal values</div>
+          <div class="prompt-item">Current confidence per axis</div>
+          <div class="prompt-item">Turn number (of 11)</div>
+          <div class="prompt-item">Lowest-confidence axis to target</div>
+          <div class="prompt-item">Last 3 interpretations (context)</div>
+        </div>
+        <div class="prompt-block" style="background:#1a0f2e;border:1px solid #2a1a4a;">
+          <div class="prompt-label" style="color:#c084fc;">RESPONSE → JSON</div>
+          <div class="prompt-item"><code style="font-family:monospace;">scene</code> — evocative prompt shown to user</div>
+          <div class="prompt-item"><code style="font-family:monospace;">imageQuery</code> — search keyword (e.g. "tabby cat")</div>
+          <div class="prompt-item"><code style="font-family:monospace;">axis</code> — MBTI axis this round probes</div>
+          <div class="prompt-item"><code style="font-family:monospace;">intent</code> — what each choice reveals</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- /api/interpret -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:700;color:#c084fc;margin-bottom:10px;">
+        <span style="font-family:monospace;font-size:12px;background:#1a0f2e;padding:2px 8px;border-radius:4px;border:1px solid #3a1f5a;">POST /api/interpret</span>
+        &nbsp;→&nbsp; Model: <code style="color:#c084fc;">gpt-4o-mini</code> · temp 0.7 · max_tokens 300
+      </div>
+      <div class="prompt-grid">
+        <div class="prompt-block" style="background:#1a0f2e;border:1px solid #2a1a4a;">
+          <div class="prompt-label" style="color:#c084fc;">SYSTEM (psychologist role)</div>
+          <div class="prompt-item">Interpret image choices for MBTI signals</div>
+          <div class="prompt-item">Signals: –1.0 (I/S/T/J) to +1.0 (E/N/F/P)</div>
+          <div class="prompt-item">Adjust incrementally ±0.05–0.20 per choice</div>
+          <div class="prompt-item">Confidence increases ±0.05–0.15 per turn</div>
+          <div class="prompt-item">Be nuanced — avoid simplistic mappings</div>
+        </div>
+        <div class="prompt-block" style="background:#0d1a0d;border:1px solid #1a2e1a;">
+          <div class="prompt-label" style="color:#4ade80;">USER MESSAGE (per turn)</div>
+          <div class="prompt-item">Scene that was presented</div>
+          <div class="prompt-item">Chosen image: description + alt text</div>
+          <div class="prompt-item">Current EI/SN/TF/JP signal values</div>
+          <div class="prompt-item">Current confidence values</div>
+          <div class="prompt-item">Turn number + last 3 interpretations</div>
+        </div>
+        <div class="prompt-block" style="background:#1a0f2e;border:1px solid #2a1a4a;">
+          <div class="prompt-label" style="color:#c084fc;">RESPONSE → JSON</div>
+          <div class="prompt-item"><code style="font-family:monospace;">signals</code> — updated {EI, SN, TF, JP} floats</div>
+          <div class="prompt-item"><code style="font-family:monospace;">confidence</code> — updated {EI, SN, TF, JP} floats</div>
+          <div class="prompt-item"><code style="font-family:monospace;">interpretation</code> — 1-2 sentence insight</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- /api/results -->
+    <div>
+      <div style="font-size:13px;font-weight:700;color:#fb923c;margin-bottom:10px;">
+        <span style="font-family:monospace;font-size:12px;background:#1a0800;padding:2px 8px;border-radius:4px;border:1px solid #4a2000;">POST /api/results</span>
+        &nbsp;→&nbsp; Model: <code style="color:#c084fc;">gpt-5.4 → gpt-4.5-preview → gpt-4o</code> (fallback chain) · temp 0.8 · max_tokens 800
+      </div>
+      <div class="prompt-grid">
+        <div class="prompt-block" style="background:#1a0800;border:1px solid #3a1800;">
+          <div class="prompt-label" style="color:#fb923c;">SYSTEM (psychologist role)</div>
+          <div class="prompt-item">Determine final MBTI type from signals</div>
+          <div class="prompt-item">Write rich, personalised 4-6 sentence paragraph</div>
+          <div class="prompt-item">Reference specific choices the user made</div>
+          <div class="prompt-item">Warm, affirming — not generic boilerplate</div>
+          <div class="prompt-item">Include trait breakdown with axis scores</div>
+        </div>
+        <div class="prompt-block" style="background:#0d1a0d;border:1px solid #1a2e1a;">
+          <div class="prompt-label" style="color:#4ade80;">USER MESSAGE (final)</div>
+          <div class="prompt-item">Final signal values for all 4 axes</div>
+          <div class="prompt-item">Final confidence per axis</div>
+          <div class="prompt-item">Full choice history (all turns): scene + image + insight</div>
+        </div>
+        <div class="prompt-block" style="background:#1a0800;border:1px solid #3a1800;">
+          <div class="prompt-label" style="color:#fb923c;">RESPONSE → JSON</div>
+          <div class="prompt-item"><code style="font-family:monospace;">type</code> — e.g. "INFP", "ESTJ"</div>
+          <div class="prompt-item"><code style="font-family:monospace;">paragraph</code> — personalised description</div>
+          <div class="prompt-item"><code style="font-family:monospace;">traitBreakdown</code> — {EI, SN, TF, JP} label + score</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATA MODEL -->
+  <div class="flow-box" style="background:#111118;border:1px solid #222230;">
+    <div class="flow-header">
+      <div class="flow-icon" style="background:#1a1200;">📦</div>
+      <div><div class="flow-title">PersonalityState — Core Data Model</div><div class="flow-sub">Lives in client memory. Passed to every API call. Never persisted to a database.</div></div>
+    </div>
+    <div class="two-col">
+      <div>
+        <div class="section-label">TypeScript Interface</div>
+        <div style="background:#0a0a10;border:1px solid #222;border-radius:8px;padding:14px;font-family:'Cascadia Code','Fira Code',monospace;font-size:12px;line-height:1.8;color:#b0b0c0;">
+          <span style="color:#c084fc;">signals</span>: { EI, SN, TF, JP } <span style="color:#555;">// –1.0 … +1.0</span><br>
+          <span style="color:#c084fc;">confidence</span>: { EI, SN, TF, JP } <span style="color:#555;">// 0.0 … 1.0</span><br>
+          <span style="color:#c084fc;">choices</span>: Array&lt;{<br>
+          &nbsp;&nbsp;<span style="color:#7b8fff;">scene</span>: string<br>
+          &nbsp;&nbsp;<span style="color:#7b8fff;">imageDescription</span>: string<br>
+          &nbsp;&nbsp;<span style="color:#7b8fff;">interpretation</span>: string<br>
+          }&gt;<br>
+          <span style="color:#c084fc;">turn</span>: number <span style="color:#555;">// 0 → 11</span><br>
+          <span style="color:#c084fc;">selectedImages</span>: Array&lt;{url, pinId}&gt;
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Quiz Completion Logic</div>
+        <div style="background:#0a0a10;border:1px solid #222;border-radius:8px;padding:14px;font-size:12.5px;color:#b0b0c0;line-height:1.7;">
+          Quiz ends when either condition is true:<br><br>
+          <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;">
+            <span style="color:#4ade80;font-weight:700;">A</span>
+            <span>All 4 confidence scores exceed <strong style="color:#fff;">0.75</strong></span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="color:#4ade80;font-weight:700;">B</span>
+            <span>Turn counter reaches <strong style="color:#fff;">11</strong> (hard limit)</span>
+          </div>
+          <br>
+          <div style="color:#555;font-size:11px;">
+            Axis: EI (–=Intro, +=Extra) · SN (–=Sensing, +=iNtuition)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TF (–=Thinking, +=Feeling) · JP (–=Judging, +=Perceiving)
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- API ENDPOINTS -->
+  <div class="flow-box" style="background:#111118;border:1px solid #222230;">
+    <div class="flow-header">
+      <div class="flow-icon" style="background:#1a1200;">⚡</div>
+      <div><div class="flow-title">API Routes Summary</div><div class="flow-sub">All routes are stateless Next.js serverless functions deployed on Vercel</div></div>
+    </div>
+    <div class="endpoints">
+      <div class="endpoint-row">
+        <div class="method-badge post-badge">POST</div>
+        <div class="endpoint-path">/api/scene</div>
+        <div class="endpoint-desc">Generates next quiz round. Takes PersonalityState, targets the lowest-confidence axis, returns scene + imageQuery for image search.</div>
+      </div>
+      <div class="endpoint-row">
+        <div class="method-badge get-badge">GET</div>
+        <div class="endpoint-path">/api/images</div>
+        <div class="endpoint-desc">Fetches 4 shuffled images for a keyword query. Waterfall: Pinterest → Pexels → Unsplash → Picsum. Supports orientation and pinId params.</div>
+      </div>
+      <div class="endpoint-row">
+        <div class="method-badge post-badge">POST</div>
+        <div class="endpoint-path">/api/interpret</div>
+        <div class="endpoint-desc">Interprets the user's image choice. Incrementally updates EI/SN/TF/JP signals and confidence. Returns a 1-2 sentence personality insight.</div>
+      </div>
+      <div class="endpoint-row">
+        <div class="method-badge post-badge">POST</div>
+        <div class="endpoint-path">/api/results</div>
+        <div class="endpoint-desc">Final MBTI type generation. Uses best available GPT model with fallback chain (gpt-5.4 → gpt-4.5-preview → gpt-4o). Returns type + personalised paragraph + trait scores.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#7b8fff;"></div> Frontend / User</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4ade80;"></div> Next.js Server</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c084fc;"></div> OpenAI API</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#38bdf8;"></div> Image APIs</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fbbf24;"></div> State / Data</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fb923c;"></div> Results</div>
+  </div>
+
+  <div style="text-align:center;margin-top:24px;font-size:11px;color:#444;">
+    Generated from source code · MBTI Visual Quiz · EdwardZehuaZhang/mbti-visual-quiz
+  </div>
+</div>
+</body>
+</html>
