@@ -29,15 +29,15 @@
 sequenceDiagram
     actor User
 
-    box rgb(219,234,254) View — Browser (Next.js)
+    box #dbeafe View (MVC)
         participant V as View<br/>/quiz · /results
     end
 
-    box rgb(220,252,231) Controller — Server (Next.js API Routes)
+    box #dcfce7 Controller (MVC)
         participant C as Controller<br/>/api/scene · /api/interpret<br/>/api/results · /api/images
     end
 
-    box rgb(254,243,199) External APIs
+    box #fef9c3 External APIs
         participant AI as OpenAI API<br/>(gpt-4o-mini / gpt-4.5)
         participant IMG as Image APIs<br/>(Pinterest → Pexels → Unsplash)
     end
