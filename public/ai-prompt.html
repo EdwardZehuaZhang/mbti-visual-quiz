@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Prompt — Sequence Diagram</title>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background:#fff; color:#111; max-width:780px; margin:40px auto; padding:0 24px 60px; }
+  h1 { font-size:20px; font-weight:700; margin-bottom:4px; }
+  .meta { font-size:12px; color:#888; margin-bottom:32px; }
+  h2 { font-size:14px; font-weight:700; margin:24px 0 8px; color:#333; text-transform:uppercase; letter-spacing:0.06em; }
+  .prompt-box { background:#f5f5f5; border:1px solid #e0e0e0; border-radius:8px; padding:20px 24px; font-size:13.5px; line-height:1.8; white-space:pre-wrap; color:#222; }
+  .tool-used { display:inline-block; background:#e8f5e9; border:1px solid #a5d6a7; border-radius:6px; padding:4px 12px; font-size:12px; color:#2e7d32; margin-bottom:12px; }
+</style>
+</head>
+<body>
+<h1>AI Prompt Used to Generate Sequence Diagram</h1>
+<div class="meta">Assignment 2 · ID2116 Computing for Design · Personality Quiz Sequence Diagram</div>
+
+<div class="tool-used">Tool used: Claude Opus (Anthropic) via Claude Code</div>
+
+<h2>Prompt</h2>
+<div class="prompt-box">Create a clean UML sequence diagram for a web app called MBTI Visual Quiz. Use the MVC architecture with these participants, grouped clearly by layer:
+
+- User (actor, outside MVC)
+- View — React frontend running in the browser (Next.js, pages: /quiz and /results)
+- Controller — Next.js serverless API routes running on the server (/api/scene, /api/interpret, /api/results, /api/images)
+- OpenAI API — external AI service (gpt-4o-mini for most calls, gpt-4.5/gpt-4o for final results)
+- Image APIs — external image search (tries Pinterest, then Pexels, then Unsplash as fallback)
+
+The flow:
+1. User opens the quiz. The View initialises a PersonalityState object in browser memory (no database — all state is client-side).
+2. Loop (up to 11 rounds, exits early when personality is determined):
+   - View calls /api/scene with the current state → Controller asks OpenAI to generate a scene description and a photo search keyword → returned to View
+   - View calls /api/images with the keyword → Controller fetches 4 photos from Image APIs → returned to View
+   - View shows the scene + 4 photos to the User
+   - User taps one photo
+   - View calls /api/interpret with the chosen photo and current state → Controller asks OpenAI what the choice reveals about the user's personality → OpenAI returns updated personality scores and a one-line insight → View saves the updated scores and shows the insight to the User
+3. View calls /api/results with all choices and final scores → Controller asks OpenAI to determine the MBTI type and write a personalised paragraph → returned to View → View shows the result page to the User
+
+Formatting rules:
+- Solid arrows (→) for requests. Dashed arrows (-->) for responses. Every arrow must have an arrowhead.
+- Group the View, Controller, and External APIs in clearly labelled coloured boxes so the MVC structure is visually obvious.
+- Keep labels short and in plain English — no technical jargon.
+- Number each step.
+- Output ONLY a Mermaid sequence diagram code block — nothing else, no explanation.</div>
+
+<h2>How it was used</h2>
+<div class="prompt-box">The prompt above was submitted to Claude Opus (claude-opus-4-5) via Claude Code.
+The model returned a Mermaid sequence diagram code block.
+The code was then embedded in an HTML page using Mermaid.js (CDN) and deployed to Vercel.
+
+Live diagram: https://mbti-visual-quiz.vercel.app/diagram</div>
+</body>
+</html>
