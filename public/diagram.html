@@ -113,21 +113,7 @@
 <h1>Personality Quiz — Sequence Diagram</h1>
 <div class="meta">Assignment 2 · ID2116 Computing for Design · Next.js · OpenAI API</div>
 
-<!-- MVC colour key -->
-<div class="mvc-legend">
-  <div class="mvc-item">
-    <div class="mvc-dot" style="background:#e8f5e9;border:2px solid #4caf50;"></div>
-    <strong>View</strong> — what the user sees (React UI in the browser)
-  </div>
-  <div class="mvc-item">
-    <div class="mvc-dot" style="background:#fff3e0;border:2px solid #ff9800;"></div>
-    <strong>Controller</strong> — logic that handles requests (Next.js API routes on the server)
-  </div>
-  <div class="mvc-item">
-    <div class="mvc-dot" style="background:#f3e5f5;border:2px solid #9c27b0;"></div>
-    <strong>External APIs</strong> — OpenAI + image services
-  </div>
-</div>
+
 
 <!-- Sequence diagram -->
 <div class="diagram-wrap">
@@ -154,10 +140,19 @@ sequenceDiagram
   autonumber
 
   actor User as 👤 User
-  participant View as View<br/>(React Frontend)
-  participant Ctrl as Controller<br/>(Next.js API Routes)
-  participant OpenAI as 🧠 OpenAI<br/>(gpt-4o-mini)
-  participant Imgs as 🖼 Image APIs<br/>(Pinterest/Pexels/Unsplash)
+
+  box rgb(214,237,216) MVC — View (runs in the browser)
+    participant View as React Frontend<br/>/quiz · /results
+  end
+
+  box rgb(255,236,179) MVC — Controller (runs on the server)
+    participant Ctrl as Next.js API Routes<br/>/api/scene · /api/interpret · /api/results · /api/images
+  end
+
+  box rgb(237,221,246) External APIs
+    participant OpenAI as 🧠 OpenAI<br/>(gpt-4o-mini / gpt-4.5)
+    participant Imgs as 🖼 Image APIs<br/>(Pinterest · Pexels · Unsplash)
+  end
 
   Note over User,View: App loads — state is set up in the browser
   User->>View: Open /quiz page
